@@ -3,7 +3,8 @@ package querycraft
 import (
 	"database/sql"
 	"fmt"
-	
+
+	"github.com/antibomberman/querycraft/dialect"
 	"github.com/jmoiron/sqlx"
 )
 
@@ -21,28 +22,31 @@ type QueryCraft interface {
 	// Transactions
 	Begin() (Transaction, error)
 	GetDB() *sqlx.DB
+
+	// Bulk operations
+	Bulk() BulkBuilder
 }
 
 type queryCraft struct {
 	db      *sqlx.DB
-	dialect Dialect
+	dialect dialect.Dialect
 }
 
 func New(driver string, db *sql.DB) (QueryCraft, error) {
 	sqlxDB := sqlx.NewDb(db, driver)
-	
+
 	qc := &queryCraft{
 		db: sqlxDB,
 	}
-	
+
 	// Set dialect based on driver
 	switch driver {
 	case "mysql":
-		qc.dialect = &MySQLDialect{}
+		qc.dialect = &dialect.MySQLDialect{}
 	default:
 		return nil, fmt.Errorf("unsupported driver: %s", driver)
 	}
-	
+
 	return qc, nil
 }
 
@@ -75,9 +79,13 @@ func (qc *queryCraft) Begin() (Transaction, error) {
 	if err != nil {
 		return nil, err
 	}
-	return NewTransaction(tx, qc.dialect), nil
+	return NewTransaction(tx, qc.db, qc.dialect), nil
 }
 
 func (qc *queryCraft) GetDB() *sqlx.DB {
 	return qc.db
+}
+
+func (qc *queryCraft) Bulk() BulkBuilder {
+	return NewBulkBuilder(qc.db, qc.dialect)
 }

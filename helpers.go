@@ -17,10 +17,6 @@ type SQLXExecutor interface {
 	QueryxContext(ctx context.Context, query string, args ...any) (*sqlx.Rows, error)
 	QueryRowxContext(ctx context.Context, query string, args ...any) *sqlx.Row
 
-	// Named queries
-	NamedExecContext(ctx context.Context, query string, arg any) (sql.Result, error)
-	NamedQueryContext(ctx context.Context, query string, arg any) (*sqlx.Rows, error)
-
 	// Утилиты
 	DriverName() string
 	Rebind(query string) string
