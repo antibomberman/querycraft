@@ -180,7 +180,7 @@ func (i *insertBuilder) buildValuesSQL() (string, []any) {
 
 	// INSERT keyword will be determined by dialect
 	queryParts = append(queryParts, "INSERT INTO")
-	queryParts = append(queryParts, i.table)
+	queryParts = append(queryParts, i.dialect.QuoteIdentifier(i.table))
 
 	if len(i.columns) > 0 {
 		quotedColumns := make([]string, len(i.columns))
@@ -224,7 +224,7 @@ func (i *insertBuilder) buildFromSelectSQL() (string, []any) {
 
 	// INSERT keyword will be determined by dialect
 	queryParts = append(queryParts, "INSERT INTO")
-	queryParts = append(queryParts, i.table)
+	queryParts = append(queryParts, i.dialect.QuoteIdentifier(i.table))
 
 	// Get SQL from select builder
 	selectSQL, selectArgs := i.fromSelect.ToSQL()

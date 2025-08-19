@@ -30,6 +30,15 @@ type Dialect interface {
 	BulkUpdate(table string, columns []string, values []any, keyColumn string) (string, []any)
 	BulkDelete(table string, conditions []map[string]any) (string, []any)
 
+	// SCHEMA
+	HasTableQuery(name string) string
+	HasColumnQuery(table, column string) string
+	HasIndexQuery(table, index string) string
+	GetTablesQuery() string
+	GetColumnsQuery(table string) string
+	GetIndexesQuery(table string) string
+	GetIDColumnType() string
+
 	// QUOTES
 	QuoteIdentifier(name string) string
 }

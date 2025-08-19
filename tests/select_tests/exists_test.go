@@ -5,11 +5,12 @@ import (
 
 	. "github.com/antibomberman/querycraft"
 	"github.com/antibomberman/querycraft/dialect"
+	"github.com/antibomberman/querycraft/tests"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestWhereExists(t *testing.T) {
-	mockDB := &MockSQLXExecutor{}
+	mockDB := &tests.MockSQLXExecutor{}
 
 	// Создаем подзапрос
 	subQuery := NewSelectBuilder(mockDB, &dialect.MySQLDialect{}, "1").
@@ -20,7 +21,7 @@ func TestWhereExists(t *testing.T) {
 	result := builder.From("users").WhereExists(subQuery)
 	sql, args := result.ToSQL()
 
-	expectedSQL := "SELECT * FROM users WHERE EXISTS (SELECT 1 FROM orders WHERE `orders`.`user_id` = `users`.`id`)"
+	expectedSQL := "SELECT * FROM `users` WHERE EXISTS (SELECT 1 FROM `orders` WHERE `orders`.`user_id` = `users`.`id`)"
 	var expectedArgs []interface{}
 
 	assert.Equal(t, expectedSQL, sql)
@@ -28,7 +29,7 @@ func TestWhereExists(t *testing.T) {
 }
 
 func TestWhereNotExists(t *testing.T) {
-	mockDB := &MockSQLXExecutor{}
+	mockDB := &tests.MockSQLXExecutor{}
 
 	// Создаем подзапрос
 	subQuery := NewSelectBuilder(mockDB, &dialect.MySQLDialect{}, "1").
@@ -39,7 +40,7 @@ func TestWhereNotExists(t *testing.T) {
 	result := builder.From("users").WhereNotExists(subQuery)
 	sql, args := result.ToSQL()
 
-	expectedSQL := "SELECT * FROM users WHERE NOT EXISTS (SELECT 1 FROM orders WHERE `orders`.`user_id` = `users`.`id`)"
+	expectedSQL := "SELECT * FROM `users` WHERE NOT EXISTS (SELECT 1 FROM `orders` WHERE `orders`.`user_id` = `users`.`id`)"
 	var expectedArgs []interface{}
 
 	assert.Equal(t, expectedSQL, sql)

@@ -17,7 +17,7 @@ func TestWhere(t *testing.T) {
 	result := builder.From("users").Where("id", "=", 1)
 	sql, args := result.ToSQL()
 
-	expectedSQL := "SELECT * FROM users WHERE `id` = ?"
+	expectedSQL := "SELECT * FROM `users` WHERE `id` = ?"
 	expectedArgs := []interface{}{1}
 
 	assert.Equal(t, expectedSQL, sql)
@@ -31,7 +31,7 @@ func TestWhereEq(t *testing.T) {
 	result := builder.From("users").WhereEq("id", 1)
 	sql, args := result.ToSQL()
 
-	expectedSQL := "SELECT * FROM users WHERE `id` = ?"
+	expectedSQL := "SELECT * FROM `users` WHERE `id` = ?"
 	expectedArgs := []interface{}{1}
 
 	assert.Equal(t, expectedSQL, sql)
@@ -45,7 +45,7 @@ func TestWhereIn(t *testing.T) {
 	result := builder.From("users").WhereIn("id", 1, 2, 3)
 	sql, args := result.ToSQL()
 
-	expectedSQL := "SELECT * FROM users WHERE `id` IN (?, ?, ?)"
+	expectedSQL := "SELECT * FROM `users` WHERE `id` IN (?, ?, ?)"
 	expectedArgs := []interface{}{1, 2, 3}
 
 	assert.Equal(t, expectedSQL, sql)
@@ -59,7 +59,7 @@ func TestWhereNotIn(t *testing.T) {
 	result := builder.From("users").WhereNotIn("id", 1, 2, 3)
 	sql, args := result.ToSQL()
 
-	expectedSQL := "SELECT * FROM users WHERE `id` NOT IN (?, ?, ?)"
+	expectedSQL := "SELECT * FROM `users` WHERE `id` NOT IN (?, ?, ?)"
 	expectedArgs := []interface{}{1, 2, 3}
 
 	assert.Equal(t, expectedSQL, sql)
@@ -73,7 +73,7 @@ func TestWhereNull(t *testing.T) {
 	result := builder.From("users").WhereNull("name")
 	sql, args := result.ToSQL()
 
-	expectedSQL := "SELECT * FROM users WHERE `name` IS NULL"
+	expectedSQL := "SELECT * FROM `users` WHERE `name` IS NULL"
 	var expectedArgs []interface{}
 
 	assert.Equal(t, expectedSQL, sql)
@@ -87,7 +87,7 @@ func TestWhereNotNull(t *testing.T) {
 	result := builder.From("users").WhereNotNull("name")
 	sql, args := result.ToSQL()
 
-	expectedSQL := "SELECT * FROM users WHERE `name` IS NOT NULL"
+	expectedSQL := "SELECT * FROM `users` WHERE `name` IS NOT NULL"
 	var expectedArgs []interface{}
 
 	assert.Equal(t, expectedSQL, sql)
@@ -101,7 +101,7 @@ func TestWhereBetween(t *testing.T) {
 	result := builder.From("users").WhereBetween("age", 18, 65)
 	sql, args := result.ToSQL()
 
-	expectedSQL := "SELECT * FROM users WHERE `age` BETWEEN ? AND ?"
+	expectedSQL := "SELECT * FROM `users` WHERE `age` BETWEEN ? AND ?"
 	expectedArgs := []interface{}{18, 65}
 
 	assert.Equal(t, expectedSQL, sql)
@@ -115,7 +115,7 @@ func TestWhereNotBetween(t *testing.T) {
 	result := builder.From("users").WhereNotBetween("age", 18, 65)
 	sql, args := result.ToSQL()
 
-	expectedSQL := "SELECT * FROM users WHERE `age` NOT BETWEEN ? AND ?"
+	expectedSQL := "SELECT * FROM `users` WHERE `age` NOT BETWEEN ? AND ?"
 	expectedArgs := []interface{}{18, 65}
 
 	assert.Equal(t, expectedSQL, sql)
@@ -129,7 +129,7 @@ func TestWhereRaw(t *testing.T) {
 	result := builder.From("users").WhereRaw("`name` = 'John' AND `age` > ?", 18)
 	sql, args := result.ToSQL()
 
-	expectedSQL := "SELECT * FROM users WHERE `name` = 'John' AND `age` > ?"
+	expectedSQL := "SELECT * FROM `users` WHERE `name` = 'John' AND `age` > ?"
 	expectedArgs := []interface{}{18}
 
 	assert.Equal(t, expectedSQL, sql)

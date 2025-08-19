@@ -91,3 +91,14 @@ func (t *transaction) GetDB() *sqlx.DB {
 func (t *transaction) Bulk() BulkBuilder {
 	return NewBulkBuilder(t.tx, t.dialect)
 }
+
+func (t *transaction) Schema() SchemaBuilder {
+	return NewSchemaBuilder(t.tx, t.dialect)
+}
+
+func (t *transaction) Migration() MigrationManager {
+	// В транзакции мы не можем управлять миграциями,
+	// так как это может привести к блокировке таблиц миграций
+	// Возвращаем nil или паникуем, чтобы показать, что это не поддерживается
+	panic("Migration is not supported in transaction")
+}

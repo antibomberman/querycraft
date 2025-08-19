@@ -16,7 +16,7 @@ func TestWhen(t *testing.T) {
 	result := builder.From("users").When(true, "status", "=", "active")
 	sql, args := result.ToSQL()
 
-	expectedSQL := "SELECT * FROM users WHERE `status` = ?"
+	expectedSQL := "SELECT * FROM `users` WHERE `status` = ?"
 	expectedArgs := []interface{}{"active"}
 
 	assert.Equal(t, expectedSQL, sql)
@@ -27,7 +27,7 @@ func TestWhen(t *testing.T) {
 	result2 := builder2.From("users").When(false, "status", "=", "active")
 	sql2, args2 := result2.ToSQL()
 
-	expectedSQL2 := "SELECT * FROM users"
+	expectedSQL2 := "SELECT * FROM `users`"
 	var expectedArgs2 []interface{}
 
 	assert.Equal(t, expectedSQL2, sql2)
@@ -44,7 +44,7 @@ func TestWhenFunc(t *testing.T) {
 	})
 	sql, args := result.ToSQL()
 
-	expectedSQL := "SELECT * FROM users WHERE `status` = ? AND `age` >= ?"
+	expectedSQL := "SELECT * FROM `users` WHERE `status` = ? AND `age` >= ?"
 	expectedArgs := []interface{}{"active", 18}
 
 	assert.Equal(t, expectedSQL, sql)
@@ -57,7 +57,7 @@ func TestWhenFunc(t *testing.T) {
 	})
 	sql2, args2 := result2.ToSQL()
 
-	expectedSQL2 := "SELECT * FROM users"
+	expectedSQL2 := "SELECT * FROM `users`"
 	var expectedArgs2 []interface{}
 
 	assert.Equal(t, expectedSQL2, sql2)

@@ -4,8 +4,10 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"github.com/antibomberman/querycraft/dialect"
+	"regexp"
 	"strings"
+
+	"github.com/antibomberman/querycraft/dialect"
 )
 
 // SelectBuilder - интерфейс для SELECT запросов
@@ -384,27 +386,27 @@ func (s *selectBuilder) Join(table, condition string) SelectBuilder {
 }
 
 func (s *selectBuilder) InnerJoin(table, condition string) SelectBuilder {
-	s.joins = append(s.joins, fmt.Sprintf("INNER JOIN %s ON %s", table, condition))
+	s.joins = append(s.joins, fmt.Sprintf("INNER JOIN %s ON %s", s.quoteTableNameWithAlias(table), condition))
 	return s
 }
 
 func (s *selectBuilder) LeftJoin(table, condition string) SelectBuilder {
-	s.joins = append(s.joins, fmt.Sprintf("LEFT JOIN %s ON %s", table, condition))
+	s.joins = append(s.joins, fmt.Sprintf("LEFT JOIN %s ON %s", s.quoteTableNameWithAlias(table), condition))
 	return s
 }
 
 func (s *selectBuilder) RightJoin(table, condition string) SelectBuilder {
-	s.joins = append(s.joins, fmt.Sprintf("RIGHT JOIN %s ON %s", table, condition))
+	s.joins = append(s.joins, fmt.Sprintf("RIGHT JOIN %s ON %s", s.quoteTableNameWithAlias(table), condition))
 	return s
 }
 
 func (s *selectBuilder) CrossJoin(table string) SelectBuilder {
-	s.joins = append(s.joins, fmt.Sprintf("CROSS JOIN %s", table))
+	s.joins = append(s.joins, fmt.Sprintf("CROSS JOIN %s", s.quoteTableNameWithAlias(table)))
 	return s
 }
 
 func (s *selectBuilder) OuterJoin(table, condition string) SelectBuilder {
-	s.joins = append(s.joins, fmt.Sprintf("OUTER JOIN %s ON %s", table, condition))
+	s.joins = append(s.joins, fmt.Sprintf("OUTER JOIN %s ON %s", s.quoteTableNameWithAlias(table), condition))
 	return s
 }
 
@@ -488,6 +490,24 @@ func (s *selectBuilder) Clone() SelectBuilder {
 	return clone
 }
 
+// quoteTableNameWithAlias экранирует имя таблицы с учетом возможного алиаса
+func (s *selectBuilder) quoteTableNameWithAlias(tableName string) string {
+	// Разделяем имя таблицы и алиас по ключевым словам
+	// Поддерживаем различные варианты: "table as alias", "table alias"
+	re := regexp.MustCompile(`(?i)^(.+?)\s+(as\s+)?(.+?)$`)
+	matches := re.FindStringSubmatch(tableName)
+
+	if len(matches) == 4 {
+		// Найден алиас
+		table := strings.TrimSpace(matches[1])
+		alias := strings.TrimSpace(matches[3])
+		return fmt.Sprintf("%s as %s", s.dialect.QuoteIdentifier(table), alias)
+	}
+
+	// Нет алиаса, просто экранируем имя таблицы
+	return s.dialect.QuoteIdentifier(tableName)
+}
+
 func (s *selectBuilder) buildSQL() (string, []any) {
 	var queryParts []string
 	var args []any
@@ -501,7 +521,8 @@ func (s *selectBuilder) buildSQL() (string, []any) {
 
 	// FROM
 	if s.table != "" {
-		queryParts = append(queryParts, fmt.Sprintf("FROM %s", s.table))
+		// Экранируем имя таблицы с учетом возможного алиаса
+		queryParts = append(queryParts, fmt.Sprintf("FROM %s", s.quoteTableNameWithAlias(s.table)))
 	}
 
 	// JOIN

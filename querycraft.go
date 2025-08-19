@@ -25,11 +25,16 @@ type QueryCraft interface {
 
 	// Bulk operations
 	Bulk() BulkBuilder
+
+	// Schema and migrations
+	Schema() SchemaBuilder
+	Migration() MigrationManager
 }
 
 type queryCraft struct {
-	db      *sqlx.DB
-	dialect dialect.Dialect
+	db         *sqlx.DB
+	dialect    dialect.Dialect
+	migrations MigrationManager
 }
 
 func New(driver string, db *sql.DB) (QueryCraft, error) {
@@ -46,6 +51,9 @@ func New(driver string, db *sql.DB) (QueryCraft, error) {
 	default:
 		return nil, fmt.Errorf("unsupported driver: %s", driver)
 	}
+
+	// Initialize migration manager
+	qc.migrations = NewMigrationManager(qc.db, qc.dialect)
 
 	return qc, nil
 }
@@ -88,4 +96,12 @@ func (qc *queryCraft) GetDB() *sqlx.DB {
 
 func (qc *queryCraft) Bulk() BulkBuilder {
 	return NewBulkBuilder(qc.db, qc.dialect)
+}
+
+func (qc *queryCraft) Schema() SchemaBuilder {
+	return NewSchemaBuilder(qc.db, qc.dialect)
+}
+
+func (qc *queryCraft) Migration() MigrationManager {
+	return qc.migrations
 }

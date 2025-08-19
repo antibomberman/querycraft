@@ -5,11 +5,12 @@ import (
 
 	. "github.com/antibomberman/querycraft"
 	"github.com/antibomberman/querycraft/dialect"
+	"github.com/antibomberman/querycraft/tests"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestCount(t *testing.T) {
-	mockDB := &MockSQLXExecutor{}
+	mockDB := &tests.MockSQLXExecutor{}
 	builder := NewSelectBuilder(mockDB, &dialect.MySQLDialect{}, "*")
 
 	result := builder.From("users")
@@ -20,7 +21,7 @@ func TestCount(t *testing.T) {
 	// Здесь просто проверим структуру
 	sql, args := result.ToSQL()
 
-	expectedSQL := "SELECT * FROM users"
+	expectedSQL := "SELECT * FROM `users`"
 	var expectedArgs []interface{}
 
 	assert.Equal(t, expectedSQL, sql)
@@ -28,7 +29,7 @@ func TestCount(t *testing.T) {
 }
 
 func TestCountColumn(t *testing.T) {
-	mockDB := &MockSQLXExecutor{}
+	mockDB := &tests.MockSQLXExecutor{}
 	builder := NewSelectBuilder(mockDB, &dialect.MySQLDialect{}, "*")
 
 	// Для тестирования CountColumn мы можем проверить, что метод работает корректно,
@@ -47,7 +48,7 @@ func TestCountColumn(t *testing.T) {
 }
 
 func TestSum(t *testing.T) {
-	mockDB := &MockSQLXExecutor{}
+	mockDB := &tests.MockSQLXExecutor{}
 	builder := NewSelectBuilder(mockDB, &dialect.MySQLDialect{}, "*")
 
 	// Аналогично CountColumn, протестируем только через интерфейс
@@ -55,7 +56,7 @@ func TestSum(t *testing.T) {
 }
 
 func TestAvg(t *testing.T) {
-	mockDB := &MockSQLXExecutor{}
+	mockDB := &tests.MockSQLXExecutor{}
 	builder := NewSelectBuilder(mockDB, &dialect.MySQLDialect{}, "*")
 
 	// Аналогично CountColumn, протестируем только через интерфейс
@@ -63,7 +64,7 @@ func TestAvg(t *testing.T) {
 }
 
 func TestMax(t *testing.T) {
-	mockDB := &MockSQLXExecutor{}
+	mockDB := &tests.MockSQLXExecutor{}
 	builder := NewSelectBuilder(mockDB, &dialect.MySQLDialect{}, "*")
 
 	// Аналогично CountColumn, протестируем только через интерфейс
@@ -73,7 +74,7 @@ func TestMax(t *testing.T) {
 }
 
 func TestMin(t *testing.T) {
-	mockDB := &MockSQLXExecutor{}
+	mockDB := &tests.MockSQLXExecutor{}
 	builder := NewSelectBuilder(mockDB, &dialect.MySQLDialect{}, "*")
 
 	// Аналогично CountColumn, протестируем только через интерфейс

@@ -5,17 +5,18 @@ import (
 
 	"github.com/antibomberman/querycraft"
 	"github.com/antibomberman/querycraft/dialect"
+	"github.com/antibomberman/querycraft/tests"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestOrderBy(t *testing.T) {
-	mockDB := &MockSQLXExecutor{}
+	mockDB := &tests.MockSQLXExecutor{}
 	builder := querycraft.NewSelectBuilder(mockDB, &dialect.MySQLDialect{}, "*")
 
 	result := builder.From("users").OrderBy("name")
 	sql, args := result.ToSQL()
 
-	expectedSQL := "SELECT * FROM users ORDER BY `name`"
+	expectedSQL := "SELECT * FROM `users` ORDER BY `name`"
 	var expectedArgs []interface{}
 
 	assert.Equal(t, expectedSQL, sql)
@@ -23,13 +24,13 @@ func TestOrderBy(t *testing.T) {
 }
 
 func TestOrderByDesc(t *testing.T) {
-	mockDB := &MockSQLXExecutor{}
+	mockDB := &tests.MockSQLXExecutor{}
 	builder := querycraft.NewSelectBuilder(mockDB, &dialect.MySQLDialect{}, "*")
 
 	result := builder.From("users").OrderByDesc("name")
 	sql, args := result.ToSQL()
 
-	expectedSQL := "SELECT * FROM users ORDER BY `name` DESC"
+	expectedSQL := "SELECT * FROM `users` ORDER BY `name` DESC"
 	var expectedArgs []interface{}
 
 	assert.Equal(t, expectedSQL, sql)
@@ -37,13 +38,13 @@ func TestOrderByDesc(t *testing.T) {
 }
 
 func TestOrderByRaw(t *testing.T) {
-	mockDB := &MockSQLXExecutor{}
+	mockDB := &tests.MockSQLXExecutor{}
 	builder := querycraft.NewSelectBuilder(mockDB, &dialect.MySQLDialect{}, "*")
 
 	result := builder.From("users").OrderByRaw("CASE WHEN `status` = 'active' THEN 1 ELSE 2 END")
 	sql, args := result.ToSQL()
 
-	expectedSQL := "SELECT * FROM users ORDER BY CASE WHEN `status` = 'active' THEN 1 ELSE 2 END"
+	expectedSQL := "SELECT * FROM `users` ORDER BY CASE WHEN `status` = 'active' THEN 1 ELSE 2 END"
 	var expectedArgs []interface{}
 
 	assert.Equal(t, expectedSQL, sql)
@@ -51,13 +52,13 @@ func TestOrderByRaw(t *testing.T) {
 }
 
 func TestGroupBy(t *testing.T) {
-	mockDB := &MockSQLXExecutor{}
+	mockDB := &tests.MockSQLXExecutor{}
 	builder := querycraft.NewSelectBuilder(mockDB, &dialect.MySQLDialect{}, "category", "COUNT(*) as count")
 
 	result := builder.From("products").GroupBy("category")
 	sql, args := result.ToSQL()
 
-	expectedSQL := "SELECT category, COUNT(*) as count FROM products GROUP BY category"
+	expectedSQL := "SELECT category, COUNT(*) as count FROM `products` GROUP BY category"
 	var expectedArgs []interface{}
 
 	assert.Equal(t, expectedSQL, sql)
@@ -65,13 +66,13 @@ func TestGroupBy(t *testing.T) {
 }
 
 func TestHaving(t *testing.T) {
-	mockDB := &MockSQLXExecutor{}
+	mockDB := &tests.MockSQLXExecutor{}
 	builder := querycraft.NewSelectBuilder(mockDB, &dialect.MySQLDialect{}, "category", "COUNT(*) as count")
 
 	result := builder.From("products").GroupBy("category").Having("COUNT(*) > ?", 5)
 	sql, args := result.ToSQL()
 
-	expectedSQL := "SELECT category, COUNT(*) as count FROM products GROUP BY category HAVING COUNT(*) > ?"
+	expectedSQL := "SELECT category, COUNT(*) as count FROM `products` GROUP BY category HAVING COUNT(*) > ?"
 	expectedArgs := []interface{}{5}
 
 	assert.Equal(t, expectedSQL, sql)

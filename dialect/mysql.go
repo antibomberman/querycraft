@@ -106,3 +106,31 @@ func (d *MySQLDialect) BulkDelete(table string, conditions []map[string]any) (st
 func (d *MySQLDialect) QuoteIdentifier(name string) string {
 	return fmt.Sprintf("`%s`", strings.ReplaceAll(name, "`", "``"))
 }
+
+func (d *MySQLDialect) HasTableQuery(name string) string {
+	return fmt.Sprintf("SELECT COUNT(*) > 0 FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name = '%s'", name)
+}
+
+func (d *MySQLDialect) HasColumnQuery(table, column string) string {
+	return fmt.Sprintf("SELECT COUNT(*) > 0 FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = '%s' AND column_name = '%s'", table, column)
+}
+
+func (d *MySQLDialect) HasIndexQuery(table, index string) string {
+	return fmt.Sprintf("SELECT COUNT(*) > 0 FROM information_schema.statistics WHERE table_schema = DATABASE() AND table_name = '%s' AND index_name = '%s'", table, index)
+}
+
+func (d *MySQLDialect) GetTablesQuery() string {
+	return "SELECT table_name as Name FROM information_schema.tables WHERE table_schema = DATABASE()"
+}
+
+func (d *MySQLDialect) GetColumnsQuery(table string) string {
+	return fmt.Sprintf("SELECT column_name as Name, data_type as Type FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = '%s'", table)
+}
+
+func (d *MySQLDialect) GetIndexesQuery(table string) string {
+	return fmt.Sprintf("SELECT index_name as Name, GROUP_CONCAT(column_name) as Columns FROM information_schema.statistics WHERE table_schema = DATABASE() AND table_name = '%s' GROUP BY index_name", table)
+}
+
+func (d *MySQLDialect) GetIDColumnType() string {
+	return "BIGINT UNSIGNED"
+}
