@@ -1,11 +1,8 @@
-package tests
+package test_utils
 
 import (
 	"context"
 	"database/sql"
-	"database/sql/driver"
-	"fmt"
-	"strings"
 
 	"github.com/jmoiron/sqlx"
 )

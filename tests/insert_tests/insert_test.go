@@ -5,12 +5,12 @@ import (
 
 	"github.com/antibomberman/querycraft"
 	"github.com/antibomberman/querycraft/dialect"
-	"github.com/antibomberman/querycraft/tests"
+	"github.com/antibomberman/querycraft/tests/test_utils"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestInsertValues(t *testing.T) {
-	mockDB := &tests.MockSQLXExecutor{}
+	mockDB := &test_utils.MockSQLXExecutor{}
 	builder := querycraft.NewInsertBuilder(mockDB, &dialect.MySQLDialect{}, "users")
 
 	result := builder.Columns("name", "email").Values("John", "john@example.com")
@@ -24,7 +24,7 @@ func TestInsertValues(t *testing.T) {
 }
 
 func TestInsertMultipleValues(t *testing.T) {
-	mockDB := &tests.MockSQLXExecutor{}
+	mockDB := &test_utils.MockSQLXExecutor{}
 	builder := querycraft.NewInsertBuilder(mockDB, &dialect.MySQLDialect{}, "users")
 
 	result := builder.Columns("name", "email").
@@ -40,7 +40,7 @@ func TestInsertMultipleValues(t *testing.T) {
 }
 
 func TestInsertValuesMap(t *testing.T) {
-	mockDB := &tests.MockSQLXExecutor{}
+	mockDB := &test_utils.MockSQLXExecutor{}
 	builder := querycraft.NewInsertBuilder(mockDB, &dialect.MySQLDialect{}, "users")
 
 	data := map[string]interface{}{
@@ -62,7 +62,7 @@ func TestInsertValuesMap(t *testing.T) {
 }
 
 func TestInsertIgnore(t *testing.T) {
-	mockDB := &tests.MockSQLXExecutor{}
+	mockDB := &test_utils.MockSQLXExecutor{}
 	builder := querycraft.NewInsertBuilder(mockDB, &dialect.MySQLDialect{}, "users")
 
 	result := builder.Columns("name", "email").Values("John", "john@example.com").Ignore()
@@ -77,7 +77,7 @@ func TestInsertIgnore(t *testing.T) {
 }
 
 func TestInsertFromSelect(t *testing.T) {
-	mockDB := &tests.MockSQLXExecutor{}
+	mockDB := &test_utils.MockSQLXExecutor{}
 
 	// Создаем SELECT запрос
 	selectBuilder := querycraft.NewSelectBuilder(mockDB, &dialect.MySQLDialect{}, "name", "email").

@@ -38,6 +38,8 @@ type SchemaBuilder interface {
 	GetTables() ([]TableInfo, error)
 	GetColumns(table string) ([]ColumnInfo, error)
 	GetIndexes(table string) ([]IndexInfo, error)
+
+	WithContext(ctx context.Context) SchemaBuilder
 }
 type TableBuilder interface {
 	// Колонки
@@ -539,12 +541,9 @@ func (t *tableBuilder) toSQL() (string, []any) {
 }
 
 func (t *tableBuilder) toCreateSQL() (string, []any) {
-	var queryParts []string
+	var columnDefs []string
 	var args []any
 
-	queryParts = append(queryParts, "CREATE TABLE", t.dialect.QuoteIdentifier(t.tableName))
-
-	var columnDefs []string
 	for _, col := range t.columns {
 		def := t.dialect.QuoteIdentifier(col.name) + " " + col.dataType
 		if len(col.modifiers) > 0 {
@@ -565,28 +564,26 @@ func (t *tableBuilder) toCreateSQL() (string, []any) {
 		}
 	}
 
-	queryParts = append(queryParts, fmt.Sprintf("(%s)", strings.Join(columnDefs, ", ")))
-
 	// Add foreign key constraints
 	for _, idx := range t.indexes {
 		if idx.foreign != nil {
-			queryParts = append(queryParts, fmt.Sprintf(", FOREIGN KEY (%s) REFERENCES %s(%s)",
+			columnDefs = append(columnDefs, fmt.Sprintf("FOREIGN KEY (%s) REFERENCES %s(%s)",
 				t.dialect.QuoteIdentifier(idx.foreign.column),
 				t.dialect.QuoteIdentifier(idx.foreign.refTable),
 				t.dialect.QuoteIdentifier(idx.foreign.refColumn)))
 		}
 	}
 
-	queryParts = append(queryParts, ")")
+	query := fmt.Sprintf("CREATE TABLE %s (%s)",
+		t.dialect.QuoteIdentifier(t.tableName),
+		strings.Join(columnDefs, ", "))
 
-	return strings.Join(queryParts, " "), args
+	return query, args
 }
 
 func (t *tableBuilder) toAlterSQL() (string, []any) {
-	var queryParts []string
+	var alterParts []string
 	var args []any
-
-	queryParts = append(queryParts, "ALTER TABLE", t.dialect.QuoteIdentifier(t.tableName))
 
 	// Add column definitions
 	for _, col := range t.columns {
@@ -594,20 +591,20 @@ func (t *tableBuilder) toAlterSQL() (string, []any) {
 		if len(col.modifiers) > 0 {
 			def += " " + strings.Join(col.modifiers, " ")
 		}
-		queryParts = append(queryParts, def)
+		alterParts = append(alterParts, def)
 	}
 
 	// Add index definitions
 	for _, idx := range t.indexes {
 		if idx.primary {
-			queryParts = append(queryParts, fmt.Sprintf("ADD PRIMARY KEY (%s)",
+			alterParts = append(alterParts, fmt.Sprintf("ADD PRIMARY KEY (%s)",
 				strings.Join(quoteIdentifiers(t.dialect, idx.columns), ", ")))
 		} else if idx.unique {
-			queryParts = append(queryParts, fmt.Sprintf("ADD UNIQUE KEY %s (%s)",
+			alterParts = append(alterParts, fmt.Sprintf("ADD UNIQUE KEY %s (%s)",
 				t.dialect.QuoteIdentifier(idx.name),
 				strings.Join(quoteIdentifiers(t.dialect, idx.columns), ", ")))
 		} else {
-			queryParts = append(queryParts, fmt.Sprintf("ADD INDEX %s (%s)",
+			alterParts = append(alterParts, fmt.Sprintf("ADD INDEX %s (%s)",
 				t.dialect.QuoteIdentifier(idx.name),
 				strings.Join(quoteIdentifiers(t.dialect, idx.columns), ", ")))
 		}
@@ -616,7 +613,7 @@ func (t *tableBuilder) toAlterSQL() (string, []any) {
 	// Add foreign key constraints
 	for _, idx := range t.indexes {
 		if idx.foreign != nil {
-			queryParts = append(queryParts, fmt.Sprintf("ADD FOREIGN KEY (%s) REFERENCES %s(%s)",
+			alterParts = append(alterParts, fmt.Sprintf("ADD FOREIGN KEY (%s) REFERENCES %s(%s)",
 				t.dialect.QuoteIdentifier(idx.foreign.column),
 				t.dialect.QuoteIdentifier(idx.foreign.refTable),
 				t.dialect.QuoteIdentifier(idx.foreign.refColumn)))
@@ -625,10 +622,11 @@ func (t *tableBuilder) toAlterSQL() (string, []any) {
 
 	// Add commands
 	for _, cmd := range t.commands {
-		queryParts = append(queryParts, cmd)
+		alterParts = append(alterParts, cmd)
 	}
 
-	return strings.Join(queryParts, ", "), args
+	query := fmt.Sprintf("ALTER TABLE %s %s", t.dialect.QuoteIdentifier(t.tableName), strings.Join(alterParts, ", "))
+	return query, args
 }
 
 func quoteIdentifiers(dialect dialect.Dialect, identifiers []string) []string {

@@ -1,16 +1,16 @@
 package update_tests
 
 import (
+	"github.com/antibomberman/querycraft/tests/test_utils"
 	"testing"
 
 	"github.com/antibomberman/querycraft"
 	"github.com/antibomberman/querycraft/dialect"
-	"github.com/antibomberman/querycraft/tests"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestUpdateSet(t *testing.T) {
-	mockDB := &tests.MockSQLXExecutor{}
+	mockDB := &test_utils.MockSQLXExecutor{}
 	builder := querycraft.NewUpdateBuilder(mockDB, &dialect.MySQLDialect{}, "users")
 
 	result := builder.Set("name", "John").Set("email", "john@example.com").Where("id", "=", 1)
@@ -24,7 +24,7 @@ func TestUpdateSet(t *testing.T) {
 }
 
 func TestUpdateSetMap(t *testing.T) {
-	mockDB := &tests.MockSQLXExecutor{}
+	mockDB := &test_utils.MockSQLXExecutor{}
 	builder := querycraft.NewUpdateBuilder(mockDB, &dialect.MySQLDialect{}, "users")
 
 	data := map[string]interface{}{
@@ -47,7 +47,7 @@ func TestUpdateSetMap(t *testing.T) {
 }
 
 func TestUpdateSetRaw(t *testing.T) {
-	mockDB := &tests.MockSQLXExecutor{}
+	mockDB := &test_utils.MockSQLXExecutor{}
 	builder := querycraft.NewUpdateBuilder(mockDB, &dialect.MySQLDialect{}, "users")
 
 	result := builder.SetRaw("`updated_at` = NOW()").Where("id", "=", 1)
@@ -61,7 +61,7 @@ func TestUpdateSetRaw(t *testing.T) {
 }
 
 func TestUpdateIncrement(t *testing.T) {
-	mockDB := &tests.MockSQLXExecutor{}
+	mockDB := &test_utils.MockSQLXExecutor{}
 	builder := querycraft.NewUpdateBuilder(mockDB, &dialect.MySQLDialect{}, "users")
 
 	result := builder.Increment("login_count", 1).Where("id", "=", 1)
@@ -75,7 +75,7 @@ func TestUpdateIncrement(t *testing.T) {
 }
 
 func TestUpdateDecrement(t *testing.T) {
-	mockDB := &tests.MockSQLXExecutor{}
+	mockDB := &test_utils.MockSQLXExecutor{}
 	builder := querycraft.NewUpdateBuilder(mockDB, &dialect.MySQLDialect{}, "users")
 
 	result := builder.Decrement("balance", 100).Where("id", "=", 1)
@@ -89,7 +89,7 @@ func TestUpdateDecrement(t *testing.T) {
 }
 
 func TestUpdateWhereIn(t *testing.T) {
-	mockDB := &tests.MockSQLXExecutor{}
+	mockDB := &test_utils.MockSQLXExecutor{}
 	builder := querycraft.NewUpdateBuilder(mockDB, &dialect.MySQLDialect{}, "users")
 
 	result := builder.Set("status", "inactive").WhereIn("id", 1, 2, 3)
@@ -103,7 +103,7 @@ func TestUpdateWhereIn(t *testing.T) {
 }
 
 func TestUpdateJoin(t *testing.T) {
-	mockDB := &tests.MockSQLXExecutor{}
+	mockDB := &test_utils.MockSQLXExecutor{}
 	builder := querycraft.NewUpdateBuilder(mockDB, &dialect.MySQLDialect{}, "users")
 
 	result := builder.Join("orders", "`users`.`id` = `orders`.`user_id`").

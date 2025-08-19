@@ -1,11 +1,11 @@
 package upsert_tests
 
 import (
+	"github.com/antibomberman/querycraft/tests/test_utils"
 	"testing"
 
 	"github.com/antibomberman/querycraft"
 	"github.com/antibomberman/querycraft/dialect"
-	"github.com/antibomberman/querycraft/tests"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -16,7 +16,7 @@ type User struct {
 }
 
 func TestUpsertValuesStruct(t *testing.T) {
-	mockDB := &tests.MockSQLXExecutor{}
+	mockDB := &test_utils.MockSQLXExecutor{}
 	builder := querycraft.NewUpsertBuilder(mockDB, &dialect.MySQLDialect{}, "users")
 
 	user := User{
@@ -41,7 +41,7 @@ func TestUpsertValuesStruct(t *testing.T) {
 }
 
 func TestUpsertOnConflictDoUpdate(t *testing.T) {
-	mockDB := &tests.MockSQLXExecutor{}
+	mockDB := &test_utils.MockSQLXExecutor{}
 	builder := querycraft.NewUpsertBuilder(mockDB, &dialect.MySQLDialect{}, "users")
 
 	user := User{
@@ -69,7 +69,7 @@ func TestUpsertOnConflictDoUpdate(t *testing.T) {
 }
 
 func TestUpsertColumns(t *testing.T) {
-	mockDB := &tests.MockSQLXExecutor{}
+	mockDB := &test_utils.MockSQLXExecutor{}
 	builder := querycraft.NewUpsertBuilder(mockDB, &dialect.MySQLDialect{}, "users")
 
 	// Сначала устанавливаем столбцы, затем значения
@@ -94,7 +94,7 @@ func TestUpsertColumns(t *testing.T) {
 }
 
 func TestUpsertWithMap(t *testing.T) {
-	mockDB := &tests.MockSQLXExecutor{}
+	mockDB := &test_utils.MockSQLXExecutor{}
 	builder := querycraft.NewUpsertBuilder(mockDB, &dialect.MySQLDialect{}, "users")
 
 	data := map[string]interface{}{

@@ -4,12 +4,12 @@ import (
 	"testing"
 
 	"github.com/antibomberman/querycraft"
-	"github.com/antibomberman/querycraft/tests"
+	"github.com/antibomberman/querycraft/tests/test_utils"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestRawQuery(t *testing.T) {
-	mockDB := &tests.MockSQLXExecutor{}
+	mockDB := &test_utils.MockSQLXExecutor{}
 
 	raw := querycraft.NewRaw(mockDB, "SELECT * FROM users WHERE id = ?", 1)
 
@@ -19,7 +19,7 @@ func TestRawQuery(t *testing.T) {
 }
 
 func TestRawQueryWithoutArgs(t *testing.T) {
-	mockDB := &tests.MockSQLXExecutor{}
+	mockDB := &test_utils.MockSQLXExecutor{}
 
 	raw := querycraft.NewRaw(mockDB, "SELECT COUNT(*) FROM users")
 
@@ -30,7 +30,7 @@ func TestRawQueryWithoutArgs(t *testing.T) {
 }
 
 func TestRawQueryWithMultipleArgs(t *testing.T) {
-	mockDB := &tests.MockSQLXExecutor{}
+	mockDB := &test_utils.MockSQLXExecutor{}
 
 	raw := querycraft.NewRaw(mockDB, "SELECT * FROM users WHERE age BETWEEN ? AND ? AND status = ?", 18, 65, "active")
 

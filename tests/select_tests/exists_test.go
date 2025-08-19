@@ -5,12 +5,12 @@ import (
 
 	. "github.com/antibomberman/querycraft"
 	"github.com/antibomberman/querycraft/dialect"
-	"github.com/antibomberman/querycraft/tests"
+	"github.com/antibomberman/querycraft/tests/test_utils"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestWhereExists(t *testing.T) {
-	mockDB := &tests.MockSQLXExecutor{}
+	mockDB := &test_utils.MockSQLXExecutor{}
 
 	// Создаем подзапрос
 	subQuery := NewSelectBuilder(mockDB, &dialect.MySQLDialect{}, "1").
@@ -29,7 +29,7 @@ func TestWhereExists(t *testing.T) {
 }
 
 func TestWhereNotExists(t *testing.T) {
-	mockDB := &tests.MockSQLXExecutor{}
+	mockDB := &test_utils.MockSQLXExecutor{}
 
 	// Создаем подзапрос
 	subQuery := NewSelectBuilder(mockDB, &dialect.MySQLDialect{}, "1").

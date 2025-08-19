@@ -4,6 +4,8 @@ go 1.24.4
 
 require github.com/jmoiron/sqlx v1.4.0
 
+require github.com/DATA-DOG/go-sqlmock v1.5.2 // indirect
+
 require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect

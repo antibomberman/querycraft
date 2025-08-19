@@ -1,6 +1,7 @@
 package select_tests
 
 import (
+	"github.com/antibomberman/querycraft/tests/test_utils"
 	"testing"
 
 	. "github.com/antibomberman/querycraft"
@@ -9,7 +10,7 @@ import (
 )
 
 func TestWhen(t *testing.T) {
-	mockDB := &MockSQLXExecutor{}
+	mockDB := &test_utils.MockSQLXExecutor{}
 
 	// Тест когда условие истинно
 	builder := NewSelectBuilder(mockDB, &dialect.MySQLDialect{}, "*")
@@ -35,7 +36,7 @@ func TestWhen(t *testing.T) {
 }
 
 func TestWhenFunc(t *testing.T) {
-	mockDB := &MockSQLXExecutor{}
+	mockDB := &test_utils.MockSQLXExecutor{}
 
 	// Тест когда условие истинно
 	builder := NewSelectBuilder(mockDB, &dialect.MySQLDialect{}, "*")

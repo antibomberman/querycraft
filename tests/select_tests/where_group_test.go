@@ -1,6 +1,7 @@
 package select_tests
 
 import (
+	"github.com/antibomberman/querycraft/tests/test_utils"
 	"testing"
 
 	. "github.com/antibomberman/querycraft"
@@ -9,7 +10,7 @@ import (
 )
 
 func TestWhereGroup(t *testing.T) {
-	mockDB := &MockSQLXExecutor{}
+	mockDB := &test_utils.MockSQLXExecutor{}
 	builder := NewSelectBuilder(mockDB, &dialect.MySQLDialect{}, "*")
 
 	result := builder.From("users").Where("status", "=", "active").
@@ -27,7 +28,7 @@ func TestWhereGroup(t *testing.T) {
 }
 
 func TestOrWhereGroup(t *testing.T) {
-	mockDB := &MockSQLXExecutor{}
+	mockDB := &test_utils.MockSQLXExecutor{}
 	builder := NewSelectBuilder(mockDB, &dialect.MySQLDialect{}, "*")
 
 	result := builder.From("users").Where("status", "=", "active").

@@ -1,16 +1,16 @@
 package select_tests
 
 import (
+	"github.com/antibomberman/querycraft/tests/test_utils"
 	"testing"
 
 	. "github.com/antibomberman/querycraft"
 	"github.com/antibomberman/querycraft/dialect"
-	"github.com/antibomberman/querycraft/tests"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestSelectOrderFromUserWithJoin(t *testing.T) {
-	mockDB := &tests.MockSQLXExecutor{}
+	mockDB := &test_utils.MockSQLXExecutor{}
 
 	// Тест для запроса qc.Select("order.*").
 	//	From("user as u").
@@ -31,7 +31,7 @@ func TestSelectOrderFromUserWithJoin(t *testing.T) {
 }
 
 func TestSelectOrderLimitWhere(t *testing.T) {
-	mockDB := &tests.MockSQLXExecutor{}
+	mockDB := &test_utils.MockSQLXExecutor{}
 
 	// Тест для запроса qc.Select("order.limit as _lim").
 	//	Where("_lim", "<>", "0")

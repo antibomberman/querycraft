@@ -12,6 +12,7 @@ type SQLXExecutor interface {
 	GetContext(ctx context.Context, dest any, query string, args ...any) error
 	SelectContext(ctx context.Context, dest any, query string, args ...any) error
 	ExecContext(ctx context.Context, query string, args ...any) (sql.Result, error)
+	QueryContext(ctx context.Context, query string, args ...any) (*sql.Rows, error)
 
 	// Для сырых запросов
 	QueryxContext(ctx context.Context, query string, args ...any) (*sqlx.Rows, error)

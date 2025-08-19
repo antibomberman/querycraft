@@ -5,12 +5,12 @@ import (
 
 	"github.com/antibomberman/querycraft"
 	"github.com/antibomberman/querycraft/dialect"
-	"github.com/antibomberman/querycraft/tests"
+	"github.com/antibomberman/querycraft/tests/test_utils"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestDeleteWhere(t *testing.T) {
-	mockDB := &tests.MockSQLXExecutor{}
+	mockDB := &test_utils.MockSQLXExecutor{}
 	builder := querycraft.NewDeleteBuilder(mockDB, &dialect.MySQLDialect{}, "users")
 
 	result := builder.Where("id", "=", 1)
@@ -24,7 +24,7 @@ func TestDeleteWhere(t *testing.T) {
 }
 
 func TestDeleteWhereEq(t *testing.T) {
-	mockDB := &tests.MockSQLXExecutor{}
+	mockDB := &test_utils.MockSQLXExecutor{}
 	builder := querycraft.NewDeleteBuilder(mockDB, &dialect.MySQLDialect{}, "users")
 
 	result := builder.WhereEq("id", 1)
@@ -38,7 +38,7 @@ func TestDeleteWhereEq(t *testing.T) {
 }
 
 func TestDeleteWhereIn(t *testing.T) {
-	mockDB := &tests.MockSQLXExecutor{}
+	mockDB := &test_utils.MockSQLXExecutor{}
 	builder := querycraft.NewDeleteBuilder(mockDB, &dialect.MySQLDialect{}, "users")
 
 	result := builder.WhereIn("id", 1, 2, 3)
@@ -52,7 +52,7 @@ func TestDeleteWhereIn(t *testing.T) {
 }
 
 func TestDeleteWhereRaw(t *testing.T) {
-	mockDB := &tests.MockSQLXExecutor{}
+	mockDB := &test_utils.MockSQLXExecutor{}
 	builder := querycraft.NewDeleteBuilder(mockDB, &dialect.MySQLDialect{}, "users")
 
 	result := builder.WhereRaw("`created_at` < NOW() - INTERVAL 30 DAY")
@@ -66,7 +66,7 @@ func TestDeleteWhereRaw(t *testing.T) {
 }
 
 func TestDeleteJoin(t *testing.T) {
-	mockDB := &tests.MockSQLXExecutor{}
+	mockDB := &test_utils.MockSQLXExecutor{}
 	builder := querycraft.NewDeleteBuilder(mockDB, &dialect.MySQLDialect{}, "users")
 
 	result := builder.Join("orders", "`users`.`id` = `orders`.`user_id`").Where("orders.status", "=", "cancelled")
@@ -80,7 +80,7 @@ func TestDeleteJoin(t *testing.T) {
 }
 
 func TestDeleteWithLimit(t *testing.T) {
-	mockDB := &tests.MockSQLXExecutor{}
+	mockDB := &test_utils.MockSQLXExecutor{}
 	builder := querycraft.NewDeleteBuilder(mockDB, &dialect.MySQLDialect{}, "users")
 
 	result := builder.Where("active", "=", false).Limit(10)
@@ -94,7 +94,7 @@ func TestDeleteWithLimit(t *testing.T) {
 }
 
 func TestDeleteWithOrderBy(t *testing.T) {
-	mockDB := &tests.MockSQLXExecutor{}
+	mockDB := &test_utils.MockSQLXExecutor{}
 	builder := querycraft.NewDeleteBuilder(mockDB, &dialect.MySQLDialect{}, "users")
 
 	result := builder.Where("active", "=", false).OrderBy("created_at")

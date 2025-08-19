@@ -1,16 +1,16 @@
 package select_tests
 
 import (
+	"github.com/antibomberman/querycraft/tests/test_utils"
 	"testing"
 
 	. "github.com/antibomberman/querycraft"
 	"github.com/antibomberman/querycraft/dialect"
-	"github.com/antibomberman/querycraft/tests"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestOrWhere(t *testing.T) {
-	mockDB := &tests.MockSQLXExecutor{}
+	mockDB := &test_utils.MockSQLXExecutor{}
 	builder := NewSelectBuilder(mockDB, &dialect.MySQLDialect{}, "*")
 
 	result := builder.From("users").Where("status", "=", "active").OrWhere("role", "=", "admin")
@@ -24,7 +24,7 @@ func TestOrWhere(t *testing.T) {
 }
 
 func TestOrWhereEq(t *testing.T) {
-	mockDB := &tests.MockSQLXExecutor{}
+	mockDB := &test_utils.MockSQLXExecutor{}
 	builder := NewSelectBuilder(mockDB, &dialect.MySQLDialect{}, "*")
 
 	result := builder.From("users").Where("status", "=", "active").OrWhereEq("role", "admin")
@@ -38,7 +38,7 @@ func TestOrWhereEq(t *testing.T) {
 }
 
 func TestOrWhereIn(t *testing.T) {
-	mockDB := &tests.MockSQLXExecutor{}
+	mockDB := &test_utils.MockSQLXExecutor{}
 	builder := NewSelectBuilder(mockDB, &dialect.MySQLDialect{}, "*")
 
 	result := builder.From("users").Where("status", "=", "active").OrWhereIn("id", 1, 2, 3)
@@ -52,7 +52,7 @@ func TestOrWhereIn(t *testing.T) {
 }
 
 func TestOrWhereNull(t *testing.T) {
-	mockDB := &tests.MockSQLXExecutor{}
+	mockDB := &test_utils.MockSQLXExecutor{}
 	builder := NewSelectBuilder(mockDB, &dialect.MySQLDialect{}, "*")
 
 	result := builder.From("users").Where("status", "=", "active").OrWhereNull("deleted_at")
@@ -66,7 +66,7 @@ func TestOrWhereNull(t *testing.T) {
 }
 
 func TestOrWhereRaw(t *testing.T) {
-	mockDB := &tests.MockSQLXExecutor{}
+	mockDB := &test_utils.MockSQLXExecutor{}
 	builder := NewSelectBuilder(mockDB, &dialect.MySQLDialect{}, "*")
 
 	result := builder.From("users").Where("status", "=", "active").OrWhereRaw("`role` = 'admin' OR `role` = 'moderator'")

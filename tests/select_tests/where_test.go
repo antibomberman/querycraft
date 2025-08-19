@@ -1,6 +1,7 @@
 package select_tests
 
 import (
+	"github.com/antibomberman/querycraft/tests/test_utils"
 	"testing"
 
 	"github.com/antibomberman/querycraft"
@@ -10,7 +11,7 @@ import (
 
 func TestWhere(t *testing.T) {
 	// Создаем мок для SQLXExecutor, который будет возвращать ожидаемый SQL
-	mockDB := &MockSQLXExecutor{}
+	mockDB := &test_utils.MockSQLXExecutor{}
 	builder := querycraft.NewSelectBuilder(mockDB, &dialect.MySQLDialect{}, "*")
 
 	// Тест Where
@@ -25,7 +26,7 @@ func TestWhere(t *testing.T) {
 }
 
 func TestWhereEq(t *testing.T) {
-	mockDB := &MockSQLXExecutor{}
+	mockDB := &test_utils.MockSQLXExecutor{}
 	builder := querycraft.NewSelectBuilder(mockDB, &dialect.MySQLDialect{}, "*")
 
 	result := builder.From("users").WhereEq("id", 1)
@@ -39,7 +40,7 @@ func TestWhereEq(t *testing.T) {
 }
 
 func TestWhereIn(t *testing.T) {
-	mockDB := &MockSQLXExecutor{}
+	mockDB := &test_utils.MockSQLXExecutor{}
 	builder := querycraft.NewSelectBuilder(mockDB, &dialect.MySQLDialect{}, "*")
 
 	result := builder.From("users").WhereIn("id", 1, 2, 3)
@@ -53,7 +54,7 @@ func TestWhereIn(t *testing.T) {
 }
 
 func TestWhereNotIn(t *testing.T) {
-	mockDB := &MockSQLXExecutor{}
+	mockDB := &test_utils.MockSQLXExecutor{}
 	builder := querycraft.NewSelectBuilder(mockDB, &dialect.MySQLDialect{}, "*")
 
 	result := builder.From("users").WhereNotIn("id", 1, 2, 3)
@@ -67,7 +68,7 @@ func TestWhereNotIn(t *testing.T) {
 }
 
 func TestWhereNull(t *testing.T) {
-	mockDB := &MockSQLXExecutor{}
+	mockDB := &test_utils.MockSQLXExecutor{}
 	builder := querycraft.NewSelectBuilder(mockDB, &dialect.MySQLDialect{}, "*")
 
 	result := builder.From("users").WhereNull("name")
@@ -81,7 +82,7 @@ func TestWhereNull(t *testing.T) {
 }
 
 func TestWhereNotNull(t *testing.T) {
-	mockDB := &MockSQLXExecutor{}
+	mockDB := &test_utils.MockSQLXExecutor{}
 	builder := querycraft.NewSelectBuilder(mockDB, &dialect.MySQLDialect{}, "*")
 
 	result := builder.From("users").WhereNotNull("name")
@@ -95,7 +96,7 @@ func TestWhereNotNull(t *testing.T) {
 }
 
 func TestWhereBetween(t *testing.T) {
-	mockDB := &MockSQLXExecutor{}
+	mockDB := &test_utils.MockSQLXExecutor{}
 	builder := querycraft.NewSelectBuilder(mockDB, &dialect.MySQLDialect{}, "*")
 
 	result := builder.From("users").WhereBetween("age", 18, 65)
@@ -109,7 +110,7 @@ func TestWhereBetween(t *testing.T) {
 }
 
 func TestWhereNotBetween(t *testing.T) {
-	mockDB := &MockSQLXExecutor{}
+	mockDB := &test_utils.MockSQLXExecutor{}
 	builder := querycraft.NewSelectBuilder(mockDB, &dialect.MySQLDialect{}, "*")
 
 	result := builder.From("users").WhereNotBetween("age", 18, 65)
@@ -123,7 +124,7 @@ func TestWhereNotBetween(t *testing.T) {
 }
 
 func TestWhereRaw(t *testing.T) {
-	mockDB := &MockSQLXExecutor{}
+	mockDB := &test_utils.MockSQLXExecutor{}
 	builder := querycraft.NewSelectBuilder(mockDB, &dialect.MySQLDialect{}, "*")
 
 	result := builder.From("users").WhereRaw("`name` = 'John' AND `age` > ?", 18)

@@ -5,12 +5,12 @@ import (
 
 	. "github.com/antibomberman/querycraft"
 	"github.com/antibomberman/querycraft/dialect"
-	"github.com/antibomberman/querycraft/tests"
+	"github.com/antibomberman/querycraft/tests/test_utils"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestSelectWithReservedTableName(t *testing.T) {
-	mockDB := &tests.MockSQLXExecutor{}
+	mockDB := &test_utils.MockSQLXExecutor{}
 	builder := NewSelectBuilder(mockDB, &dialect.MySQLDialect{}, "*")
 
 	// Тест с зарезервированным именем таблицы
@@ -25,7 +25,7 @@ func TestSelectWithReservedTableName(t *testing.T) {
 }
 
 func TestSelectWithTableAlias(t *testing.T) {
-	mockDB := &tests.MockSQLXExecutor{}
+	mockDB := &test_utils.MockSQLXExecutor{}
 	builder := NewSelectBuilder(mockDB, &dialect.MySQLDialect{}, "*")
 
 	// Тест с алиасом таблицы
@@ -40,7 +40,7 @@ func TestSelectWithTableAlias(t *testing.T) {
 }
 
 func TestSelectWithColumnAliases(t *testing.T) {
-	mockDB := &tests.MockSQLXExecutor{}
+	mockDB := &test_utils.MockSQLXExecutor{}
 	builder := NewSelectBuilder(mockDB, &dialect.MySQLDialect{}, "id as order_id", "product_name as product", "quantity as qty")
 
 	result := builder.From("order")
@@ -54,7 +54,7 @@ func TestSelectWithColumnAliases(t *testing.T) {
 }
 
 func TestSelectWithReservedColumnNames(t *testing.T) {
-	mockDB := &tests.MockSQLXExecutor{}
+	mockDB := &test_utils.MockSQLXExecutor{}
 	builder := NewSelectBuilder(mockDB, &dialect.MySQLDialect{}, "`order` as order_number", "`group` as group_name")
 
 	result := builder.From("order")
@@ -68,7 +68,7 @@ func TestSelectWithReservedColumnNames(t *testing.T) {
 }
 
 func TestJoinWithReservedTableNames(t *testing.T) {
-	mockDB := &tests.MockSQLXExecutor{}
+	mockDB := &test_utils.MockSQLXExecutor{}
 	builder := NewSelectBuilder(mockDB, &dialect.MySQLDialect{}, "*")
 
 	// Тест JOIN с зарезервированными именами таблиц
@@ -86,7 +86,7 @@ func TestJoinWithReservedTableNames(t *testing.T) {
 }
 
 func TestComplexQueryWithAliases(t *testing.T) {
-	mockDB := &tests.MockSQLXExecutor{}
+	mockDB := &test_utils.MockSQLXExecutor{}
 	builder := NewSelectBuilder(mockDB, &dialect.MySQLDialect{},
 		"`o`.`id` as order_id",
 		"`u`.`name` as customer_name",

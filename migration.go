@@ -45,13 +45,13 @@ type MigrationStatus struct {
 }
 
 type migrationManager struct {
-	db         SQLExecutor
+	db         SQLXExecutor
 	dialect    dialect.Dialect
 	migrations map[string]Migration
 	ctx        context.Context
 }
 
-func NewMigrationManager(db SQLExecutor, dialect dialect.Dialect) MigrationManager {
+func NewMigrationManager(db SQLXExecutor, dialect dialect.Dialect) MigrationManager {
 	return &migrationManager{
 		db:         db,
 		dialect:    dialect,

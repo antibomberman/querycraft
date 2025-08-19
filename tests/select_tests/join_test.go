@@ -5,12 +5,12 @@ import (
 
 	"github.com/antibomberman/querycraft"
 	"github.com/antibomberman/querycraft/dialect"
-	"github.com/antibomberman/querycraft/tests"
+	"github.com/antibomberman/querycraft/tests/test_utils"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestJoin(t *testing.T) {
-	mockDB := &tests.MockSQLXExecutor{}
+	mockDB := &test_utils.MockSQLXExecutor{}
 	builder := querycraft.NewSelectBuilder(mockDB, &dialect.MySQLDialect{}, "*")
 
 	// Тест Join (INNER JOIN)
@@ -25,7 +25,7 @@ func TestJoin(t *testing.T) {
 }
 
 func TestInnerJoin(t *testing.T) {
-	mockDB := &tests.MockSQLXExecutor{}
+	mockDB := &test_utils.MockSQLXExecutor{}
 	builder := querycraft.NewSelectBuilder(mockDB, &dialect.MySQLDialect{}, "*")
 
 	result := builder.From("users").InnerJoin("orders", "`users`.`id` = `orders`.`user_id`")
@@ -39,7 +39,7 @@ func TestInnerJoin(t *testing.T) {
 }
 
 func TestLeftJoin(t *testing.T) {
-	mockDB := &tests.MockSQLXExecutor{}
+	mockDB := &test_utils.MockSQLXExecutor{}
 	builder := querycraft.NewSelectBuilder(mockDB, &dialect.MySQLDialect{}, "*")
 
 	result := builder.From("users").LeftJoin("orders", "`users`.`id` = `orders`.`user_id`")
@@ -53,7 +53,7 @@ func TestLeftJoin(t *testing.T) {
 }
 
 func TestRightJoin(t *testing.T) {
-	mockDB := &tests.MockSQLXExecutor{}
+	mockDB := &test_utils.MockSQLXExecutor{}
 	builder := querycraft.NewSelectBuilder(mockDB, &dialect.MySQLDialect{}, "*")
 
 	result := builder.From("users").RightJoin("orders", "`users`.`id` = `orders`.`user_id`")
@@ -67,7 +67,7 @@ func TestRightJoin(t *testing.T) {
 }
 
 func TestCrossJoin(t *testing.T) {
-	mockDB := &tests.MockSQLXExecutor{}
+	mockDB := &test_utils.MockSQLXExecutor{}
 	builder := querycraft.NewSelectBuilder(mockDB, &dialect.MySQLDialect{}, "*")
 
 	result := builder.From("users").CrossJoin("orders")
@@ -81,7 +81,7 @@ func TestCrossJoin(t *testing.T) {
 }
 
 func TestOuterJoin(t *testing.T) {
-	mockDB := &tests.MockSQLXExecutor{}
+	mockDB := &test_utils.MockSQLXExecutor{}
 	builder := querycraft.NewSelectBuilder(mockDB, &dialect.MySQLDialect{}, "*")
 
 	result := builder.From("users").OuterJoin("orders", "`users`.`id` = `orders`.`user_id`")

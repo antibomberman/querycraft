@@ -1,16 +1,16 @@
 package select_tests
 
 import (
+	"github.com/antibomberman/querycraft/tests/test_utils"
 	"testing"
 
 	"github.com/antibomberman/querycraft"
 	"github.com/antibomberman/querycraft/dialect"
-	"github.com/antibomberman/querycraft/tests"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestOrderBy(t *testing.T) {
-	mockDB := &tests.MockSQLXExecutor{}
+	mockDB := &test_utils.MockSQLXExecutor{}
 	builder := querycraft.NewSelectBuilder(mockDB, &dialect.MySQLDialect{}, "*")
 
 	result := builder.From("users").OrderBy("name")
@@ -24,7 +24,7 @@ func TestOrderBy(t *testing.T) {
 }
 
 func TestOrderByDesc(t *testing.T) {
-	mockDB := &tests.MockSQLXExecutor{}
+	mockDB := &test_utils.MockSQLXExecutor{}
 	builder := querycraft.NewSelectBuilder(mockDB, &dialect.MySQLDialect{}, "*")
 
 	result := builder.From("users").OrderByDesc("name")
@@ -38,7 +38,7 @@ func TestOrderByDesc(t *testing.T) {
 }
 
 func TestOrderByRaw(t *testing.T) {
-	mockDB := &tests.MockSQLXExecutor{}
+	mockDB := &test_utils.MockSQLXExecutor{}
 	builder := querycraft.NewSelectBuilder(mockDB, &dialect.MySQLDialect{}, "*")
 
 	result := builder.From("users").OrderByRaw("CASE WHEN `status` = 'active' THEN 1 ELSE 2 END")
@@ -52,7 +52,7 @@ func TestOrderByRaw(t *testing.T) {
 }
 
 func TestGroupBy(t *testing.T) {
-	mockDB := &tests.MockSQLXExecutor{}
+	mockDB := &test_utils.MockSQLXExecutor{}
 	builder := querycraft.NewSelectBuilder(mockDB, &dialect.MySQLDialect{}, "category", "COUNT(*) as count")
 
 	result := builder.From("products").GroupBy("category")
@@ -66,7 +66,7 @@ func TestGroupBy(t *testing.T) {
 }
 
 func TestHaving(t *testing.T) {
-	mockDB := &tests.MockSQLXExecutor{}
+	mockDB := &test_utils.MockSQLXExecutor{}
 	builder := querycraft.NewSelectBuilder(mockDB, &dialect.MySQLDialect{}, "category", "COUNT(*) as count")
 
 	result := builder.From("products").GroupBy("category").Having("COUNT(*) > ?", 5)
