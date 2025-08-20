@@ -35,7 +35,7 @@ func Connect() {
 func main() {
 
 	Connect()
-	ExampleDelete()
+	ExampleBulk()
 
 	defer DB.Close()
 }

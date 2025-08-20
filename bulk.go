@@ -111,7 +111,7 @@ func (b *bulkBuilder) BulkInsert(table string, data any, opts ...BulkOption) err
 
 		// Generate SQL
 		query := b.generateBulkInsertSQL(table, columns, len(batch))
-
+		fmt.Println(query)
 		// Handle conflicts
 		switch config.OnConflict {
 		case ConflictIgnore:
@@ -153,31 +153,25 @@ func (b *bulkBuilder) BulkUpdate(table string, data any, opts ...BulkOption) err
 		}
 		batch := rows[i:end]
 
-		// Get columns from first row
-		if len(batch) == 0 {
-			continue
-		}
-
-		var columns []string
-		for col := range batch[0] {
-			columns = append(columns, col)
-		}
-
-		// Prepare values
-		var values []any
+		// Process each row in the batch
 		for _, row := range batch {
-			for _, col := range columns {
-				values = append(values, row[col])
+			// Separate columns and values
+			var columns []string
+			var values []any
+
+			for col, val := range row {
+				columns = append(columns, col)
+				values = append(values, val)
 			}
-		}
 
-		// Generate SQL
-		query := b.generateBulkUpdateSQL(table, columns, len(batch))
+			// Generate SQL for single row update
+			query := b.generateSingleUpdateSQL(table, columns)
 
-		// Execute
-		_, err := b.db.ExecContext(b.ctx, query, values...)
-		if err != nil && !config.IgnoreErrors {
-			return err
+			// Execute
+			_, err := b.db.ExecContext(b.ctx, query, values...)
+			if err != nil && !config.IgnoreErrors {
+				return err
+			}
 		}
 	}
 
@@ -524,23 +518,32 @@ func (b *bulkBuilder) generateBulkUpdateSQL(table string, columns []string, rowC
 		quotedColumns[i] = b.dialect.QuoteIdentifier(col)
 	}
 
-	// Create placeholders for one row
-	placeholders := make([]string, len(columns))
-	for i := range placeholders {
-		placeholders[i] = b.dialect.PlaceholderFormat()
-	}
-	rowPlaceholder := fmt.Sprintf("(%s)", strings.Join(placeholders, ", "))
-
-	// Create all row placeholders
-	var allPlaceholders []string
-	for i := 0; i < rowCount; i++ {
-		allPlaceholders = append(allPlaceholders, rowPlaceholder)
+	// Create SET clause with multiple assignments
+	var setParts []string
+	for _, col := range quotedColumns {
+		setParts = append(setParts, fmt.Sprintf("%s = %s", col, b.dialect.PlaceholderFormat()))
 	}
 
-	return fmt.Sprintf("UPDATE %s SET (%s) = VALUES (%s)",
+	return fmt.Sprintf("UPDATE %s SET %s",
 		b.dialect.QuoteIdentifier(table),
-		strings.Join(quotedColumns, ", "),
-		strings.Join(quotedColumns, ", "))
+		strings.Join(setParts, ", "))
+}
+
+func (b *bulkBuilder) generateSingleUpdateSQL(table string, columns []string) string {
+	quotedColumns := make([]string, len(columns))
+	for i, col := range columns {
+		quotedColumns[i] = b.dialect.QuoteIdentifier(col)
+	}
+
+	// Create SET clause with multiple assignments
+	var setParts []string
+	for _, col := range quotedColumns {
+		setParts = append(setParts, fmt.Sprintf("%s = %s", col, b.dialect.PlaceholderFormat()))
+	}
+
+	return fmt.Sprintf("UPDATE %s SET %s",
+		b.dialect.QuoteIdentifier(table),
+		strings.Join(setParts, ", "))
 }
 
 func (b *bulkBuilder) generateBulkUpsertSQL(table string, columns []string, conflictColumns []string, rowCount int) string {

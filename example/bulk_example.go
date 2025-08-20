@@ -14,16 +14,6 @@ func ExampleBulk() {
 	var err error
 	QC.Schema().ClearTable("users")
 
-	// Create users table
-	QC.Schema().CreateTable("users", func(builder querycraft.TableBuilder) {
-		builder.ID()
-		builder.String("name", 100).Nullable()
-		builder.String("email", 255).NotNull().Unique()
-		builder.Integer("age").Default(0)
-		builder.Timestamp("created_at").NotNull()
-		builder.Timestamp("updated_at").NotNull()
-	})
-
 	fmt.Println("=== Bulk Examples ===")
 
 	// Example 1: Bulk insert
@@ -41,9 +31,10 @@ func ExampleBulk() {
 	bulk := QC.Bulk()
 	err = bulk.BulkInsert("users", bulkUsers, querycraft.WithBatchSize(100))
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal(1, err)
 	}
 	fmt.Printf("Bulk inserted %d usersn", len(bulkUsers))
+	fmt.Println()
 
 	// Example 2: Bulk update
 	// First, update some users to have a specific pattern
@@ -54,16 +45,17 @@ func ExampleBulk() {
 			Name:      sql.NullString{String: fmt.Sprintf("Updated User %d", i), Valid: true},
 			Email:     fmt.Sprintf("updateduser%d@example.com", i),
 			Age:       30 + (i % 30),
+			CreatedAt: time.Now(),
 			UpdatedAt: time.Now(),
 		})
 	}
 
 	err = bulk.BulkUpdate("users", updateUsers, querycraft.WithBatchSize(50))
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal(2, err)
 	}
 	fmt.Printf("Bulk updated %d usersn", len(updateUsers))
-
+	fmt.Println()
 	// Example 3: Bulk delete
 	conditions := []map[string]any{
 		{"age": 25},
@@ -73,10 +65,10 @@ func ExampleBulk() {
 
 	err = bulk.BulkDelete("users", conditions)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal(3, err)
 	}
 	fmt.Printf("Bulk deleted users with specified conditionsn")
-
+	fmt.Println()
 	// Example 4: Bulk upsert
 	var upsertUsers []User
 	for i := 900; i < 1100; i++ {
@@ -92,10 +84,10 @@ func ExampleBulk() {
 
 	err = bulk.BulkUpsert("users", upsertUsers, []string{"email"}, querycraft.WithBatchSize(50))
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal(4, err)
 	}
 	fmt.Printf("Bulk upserted %d usersn", len(upsertUsers))
-
+	fmt.Println()
 	// Example 5: Process in batches
 	fmt.Println("Processing users in batches:")
 	err = bulk.ProcessInBatches(
@@ -111,7 +103,7 @@ func ExampleBulk() {
 		},
 	)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal(5, err)
 	}
 
 	// Example 6: Bulk update by key
@@ -127,7 +119,8 @@ func ExampleBulk() {
 
 	err = bulk.BulkUpdateByKey("users", keyUpdateUsers, "id")
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal(6, err)
 	}
 	fmt.Printf("Bulk updated %d users by keyn", len(keyUpdateUsers))
+	fmt.Println()
 }
