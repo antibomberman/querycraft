@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
+	"time"
 
 	"github.com/antibomberman/querycraft/dialect"
 )
@@ -91,7 +92,7 @@ type SelectBuilder interface {
 	Clone() SelectBuilder
 
 	ToSQL() (string, []any)
-	Debug() string
+	PrintSQL() SelectBuilder
 	Explain() ([]map[string]any, error)
 }
 
@@ -126,6 +127,7 @@ type selectBuilder struct {
 	db      SQLXExecutor
 	dialect dialect.Dialect
 	ctx     context.Context
+	logger  Logger
 
 	// Query parts
 	columns    []string
@@ -143,6 +145,9 @@ type selectBuilder struct {
 	// For subqueries in where exists
 	subqueries   []string
 	subqueryArgs []any
+
+	// Print SQL flag
+	printSQL bool
 }
 
 func NewSelectBuilder(db SQLXExecutor, dialect dialect.Dialect, columns ...string) SelectBuilder {
@@ -616,13 +621,13 @@ func (s *selectBuilder) ToSQL() (string, []any) {
 	return s.buildSQL()
 }
 
-func (s *selectBuilder) Debug() string {
-	sql, args := s.buildSQL()
-	// Simple placeholder replacement for debugging
-	for _, arg := range args {
-		sql = strings.Replace(sql, s.dialect.PlaceholderFormat(), fmt.Sprintf("'%v'", arg), 1)
-	}
-	return sql
+func (s *selectBuilder) PrintSQL() SelectBuilder {
+	s.printSQL = true
+	return s
+}
+
+func (s *selectBuilder) setLogger(logger Logger) {
+	s.logger = logger
 }
 
 func (s *selectBuilder) Explain() ([]map[string]any, error) {
@@ -660,7 +665,32 @@ func (s *selectBuilder) One(dest any) error {
 		return nil
 	default:
 		sql, args := s.buildSQL()
-		return s.db.GetContext(s.ctx, dest, sql, args...)
+
+		// Print SQL if needed
+		if s.printSQL {
+			// Simple placeholder replacement for debugging
+			formattedSQL := sql
+			for _, arg := range args {
+				formattedSQL = strings.Replace(formattedSQL, s.dialect.PlaceholderFormat(), fmt.Sprintf("'%v'", arg), 1)
+			}
+			fmt.Println(formattedSQL)
+		}
+
+		// Log query if logger is set
+		var start time.Time
+		if s.logger != nil {
+			start = time.Now()
+		}
+
+		err := s.db.GetContext(s.ctx, dest, sql, args...)
+
+		// Log query execution
+		if s.logger != nil {
+			duration := time.Since(start)
+			s.logger.LogQuery(s.ctx, sql, args, duration, err)
+		}
+
+		return err
 	}
 }
 
@@ -677,15 +707,61 @@ func (s *selectBuilder) All(dest any) error {
 		return nil
 	default:
 		sql, args := s.buildSQL()
-		return s.db.SelectContext(s.ctx, dest, sql, args...)
+
+		// Print SQL if needed
+		if s.printSQL {
+			// Simple placeholder replacement for debugging
+			formattedSQL := sql
+			for _, arg := range args {
+				formattedSQL = strings.Replace(formattedSQL, s.dialect.PlaceholderFormat(), fmt.Sprintf("'%v'", arg), 1)
+			}
+			fmt.Println(formattedSQL)
+		}
+
+		// Log query if logger is set
+		var start time.Time
+		if s.logger != nil {
+			start = time.Now()
+		}
+
+		err := s.db.SelectContext(s.ctx, dest, sql, args...)
+
+		// Log query execution
+		if s.logger != nil {
+			duration := time.Since(start)
+			s.logger.LogQuery(s.ctx, sql, args, duration, err)
+		}
+
+		return err
 	}
 }
 
 func (s *selectBuilder) Row() (map[string]any, error) {
 	query, args := s.buildSQL()
 
+	// Print SQL if needed
+	if s.printSQL {
+		// Simple placeholder replacement for debugging
+		formattedSQL := query
+		for _, arg := range args {
+			formattedSQL = strings.Replace(formattedSQL, s.dialect.PlaceholderFormat(), fmt.Sprintf("'%v'", arg), 1)
+		}
+		fmt.Println(formattedSQL)
+	}
+
+	// Log query if logger is set
+	var start time.Time
+	if s.logger != nil {
+		start = time.Now()
+	}
+
 	rows, err := s.db.QueryxContext(s.ctx, query, args...)
 	if err != nil {
+		// Log query execution
+		if s.logger != nil {
+			duration := time.Since(start)
+			s.logger.LogQuery(s.ctx, query, args, duration, err)
+		}
 		return nil, err
 	}
 	defer rows.Close()
@@ -693,9 +769,27 @@ func (s *selectBuilder) Row() (map[string]any, error) {
 	if rows.Next() {
 		row := make(map[string]any)
 		if err := rows.MapScan(row); err != nil {
+			// Log query execution
+			if s.logger != nil {
+				duration := time.Since(start)
+				s.logger.LogQuery(s.ctx, query, args, duration, err)
+			}
 			return nil, err
 		}
+
+		// Log query execution
+		if s.logger != nil {
+			duration := time.Since(start)
+			s.logger.LogQuery(s.ctx, query, args, duration, nil)
+		}
+
 		return row, nil
+	}
+
+	// Log query execution
+	if s.logger != nil {
+		duration := time.Since(start)
+		s.logger.LogQuery(s.ctx, query, args, duration, sql.ErrNoRows)
 	}
 
 	return nil, sql.ErrNoRows
@@ -704,8 +798,29 @@ func (s *selectBuilder) Row() (map[string]any, error) {
 func (s *selectBuilder) Rows() ([]map[string]any, error) {
 	sql, args := s.buildSQL()
 
+	// Print SQL if needed
+	if s.printSQL {
+		// Simple placeholder replacement for debugging
+		formattedSQL := sql
+		for _, arg := range args {
+			formattedSQL = strings.Replace(formattedSQL, s.dialect.PlaceholderFormat(), fmt.Sprintf("'%v'", arg), 1)
+		}
+		fmt.Println(formattedSQL)
+	}
+
+	// Log query if logger is set
+	var start time.Time
+	if s.logger != nil {
+		start = time.Now()
+	}
+
 	rows, err := s.db.QueryxContext(s.ctx, sql, args...)
 	if err != nil {
+		// Log query execution
+		if s.logger != nil {
+			duration := time.Since(start)
+			s.logger.LogQuery(s.ctx, sql, args, duration, err)
+		}
 		return nil, err
 	}
 	defer rows.Close()
@@ -714,9 +829,20 @@ func (s *selectBuilder) Rows() ([]map[string]any, error) {
 	for rows.Next() {
 		row := make(map[string]any)
 		if err := rows.MapScan(row); err != nil {
+			// Log query execution
+			if s.logger != nil {
+				duration := time.Since(start)
+				s.logger.LogQuery(s.ctx, sql, args, duration, err)
+			}
 			return nil, err
 		}
 		results = append(results, row)
+	}
+
+	// Log query execution
+	if s.logger != nil {
+		duration := time.Since(start)
+		s.logger.LogQuery(s.ctx, sql, args, duration, nil)
 	}
 
 	return results, nil
@@ -918,11 +1044,34 @@ func (s *selectBuilder) Exists() (bool, error) {
 	query, args := s.buildSQL()
 	checkSQL := fmt.Sprintf("SELECT EXISTS(%s) as _exists", query)
 
+	// Print SQL if needed
+	if s.printSQL {
+		// Simple placeholder replacement for debugging
+		formattedSQL := checkSQL
+		for _, arg := range args {
+			formattedSQL = strings.Replace(formattedSQL, s.dialect.PlaceholderFormat(), fmt.Sprintf("'%v'", arg), 1)
+		}
+		fmt.Println(formattedSQL)
+	}
+
+	// Log query if logger is set
+	var start time.Time
+	if s.logger != nil {
+		start = time.Now()
+	}
+
 	var result struct {
 		Exists bool `db:"_exists"`
 	}
 
 	err := s.db.GetContext(s.ctx, &result, checkSQL, args...)
+
+	// Log query execution
+	if s.logger != nil {
+		duration := time.Since(start)
+		s.logger.LogQuery(s.ctx, checkSQL, args, duration, err)
+	}
+
 	if err != nil {
 		return false, err
 	}

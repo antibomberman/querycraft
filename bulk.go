@@ -7,6 +7,7 @@ import (
 	"os"
 	"reflect"
 	"strings"
+	"time"
 
 	"github.com/antibomberman/querycraft/dialect"
 )
@@ -52,6 +53,7 @@ type bulkBuilder struct {
 	db      SQLXExecutor
 	dialect dialect.Dialect
 	ctx     context.Context
+	logger  Logger
 }
 
 func NewBulkBuilder(db SQLXExecutor, dialect dialect.Dialect) BulkBuilder {
@@ -65,6 +67,10 @@ func NewBulkBuilder(db SQLXExecutor, dialect dialect.Dialect) BulkBuilder {
 func (b *bulkBuilder) WithContext(ctx context.Context) BulkBuilder {
 	b.ctx = ctx
 	return b
+}
+
+func (b *bulkBuilder) setLogger(logger Logger) {
+	b.logger = logger
 }
 
 // Bulk Insert
@@ -126,7 +132,7 @@ func (b *bulkBuilder) BulkInsert(table string, data any, opts ...BulkOption) err
 
 		// Generate SQL
 		query := b.generateBulkInsertSQL(table, columns, len(batch))
-		fmt.Println(query)
+
 		// Handle conflicts
 		switch config.OnConflict {
 		case ConflictIgnore:
@@ -136,8 +142,31 @@ func (b *bulkBuilder) BulkInsert(table string, data any, opts ...BulkOption) err
 			query = strings.Replace(query, "INSERT", "REPLACE", 1)
 		}
 
+		// Print SQL if logger is set or printSQL is true
+		if b.logger != nil {
+			// Simple placeholder replacement for debugging
+			formattedSQL := query
+			for _, arg := range values {
+				formattedSQL = strings.Replace(formattedSQL, b.dialect.PlaceholderFormat(), fmt.Sprintf("'%v'", arg), 1)
+			}
+			fmt.Println(formattedSQL)
+		}
+
+		// Log query if logger is set
+		var start time.Time
+		if b.logger != nil {
+			start = time.Now()
+		}
+
 		// Execute
 		_, err := b.db.ExecContext(b.ctx, query, values...)
+
+		// Log query execution
+		if b.logger != nil {
+			duration := time.Since(start)
+			b.logger.LogQuery(b.ctx, query, values, duration, err)
+		}
+
 		if err != nil && !config.IgnoreErrors {
 			return err
 		}
@@ -192,8 +221,31 @@ func (b *bulkBuilder) BulkUpdate(table string, data any, opts ...BulkOption) err
 			// Generate SQL for single row update
 			query := b.generateSingleUpdateSQL(table, columns)
 
+			// Print SQL if logger is set or printSQL is true
+			if b.logger != nil {
+				// Simple placeholder replacement for debugging
+				formattedSQL := query
+				for _, arg := range values {
+					formattedSQL = strings.Replace(formattedSQL, b.dialect.PlaceholderFormat(), fmt.Sprintf("'%v'", arg), 1)
+				}
+				fmt.Println(formattedSQL)
+			}
+
+			// Log query if logger is set
+			var start time.Time
+			if b.logger != nil {
+				start = time.Now()
+			}
+
 			// Execute
 			_, err := b.db.ExecContext(b.ctx, query, values...)
+
+			// Log query execution
+			if b.logger != nil {
+				duration := time.Since(start)
+				b.logger.LogQuery(b.ctx, query, values, duration, err)
+			}
+
 			if err != nil && !config.IgnoreErrors {
 				return err
 			}
@@ -212,8 +264,31 @@ func (b *bulkBuilder) BulkDelete(table string, conditions []map[string]any) erro
 	// Generate SQL
 	query, args := b.dialect.BulkDelete(table, conditions)
 
+	// Print SQL if logger is set or printSQL is true
+	if b.logger != nil {
+		// Simple placeholder replacement for debugging
+		formattedSQL := query
+		for _, arg := range args {
+			formattedSQL = strings.Replace(formattedSQL, b.dialect.PlaceholderFormat(), fmt.Sprintf("'%v'", arg), 1)
+		}
+		fmt.Println(formattedSQL)
+	}
+
+	// Log query if logger is set
+	var start time.Time
+	if b.logger != nil {
+		start = time.Now()
+	}
+
 	// Execute
 	_, err := b.db.ExecContext(b.ctx, query, args...)
+
+	// Log query execution
+	if b.logger != nil {
+		duration := time.Since(start)
+		b.logger.LogQuery(b.ctx, query, args, duration, err)
+	}
+
 	return err
 }
 
@@ -280,8 +355,31 @@ func (b *bulkBuilder) BulkUpsert(table string, data any, conflictColumns []strin
 		// Generate SQL
 		query := b.generateBulkUpsertSQL(table, columns, conflictColumns, len(batch))
 
+		// Print SQL if logger is set or printSQL is true
+		if b.logger != nil {
+			// Simple placeholder replacement for debugging
+			formattedSQL := query
+			for _, arg := range values {
+				formattedSQL = strings.Replace(formattedSQL, b.dialect.PlaceholderFormat(), fmt.Sprintf("'%v'", arg), 1)
+			}
+			fmt.Println(formattedSQL)
+		}
+
+		// Log query if logger is set
+		var start time.Time
+		if b.logger != nil {
+			start = time.Now()
+		}
+
 		// Execute
 		_, err := b.db.ExecContext(b.ctx, query, values...)
+
+		// Log query execution
+		if b.logger != nil {
+			duration := time.Since(start)
+			b.logger.LogQuery(b.ctx, query, values, duration, err)
+		}
+
 		if err != nil && !config.IgnoreErrors {
 			return err
 		}
@@ -339,8 +437,31 @@ func (b *bulkBuilder) BulkUpdateByKey(table string, data any, keyColumn string) 
 	// Generate SQL
 	query := b.generateBulkUpdateByKeySQL(table, columns, keyColumn, len(rows))
 
+	// Print SQL if logger is set or printSQL is true
+	if b.logger != nil {
+		// Simple placeholder replacement for debugging
+		formattedSQL := query
+		for _, arg := range values {
+			formattedSQL = strings.Replace(formattedSQL, b.dialect.PlaceholderFormat(), fmt.Sprintf("'%v'", arg), 1)
+		}
+		fmt.Println(formattedSQL)
+	}
+
+	// Log query if logger is set
+	var start time.Time
+	if b.logger != nil {
+		start = time.Now()
+	}
+
 	// Execute
 	_, err = b.db.ExecContext(b.ctx, query, values...)
+
+	// Log query execution
+	if b.logger != nil {
+		duration := time.Since(start)
+		b.logger.LogQuery(b.ctx, query, values, duration, err)
+	}
+
 	return err
 }
 

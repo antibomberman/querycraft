@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"reflect"
 	"strings"
+	"time"
 
 	"github.com/antibomberman/querycraft/dialect"
 )
@@ -30,12 +31,11 @@ type InsertBuilder interface {
 	// Выполнение
 	Exec() (sql.Result, error)
 	ExecReturnID() (int64, error)
-	//ExecReturnIDs() ([]int64, error)
 
 	// Утилиты
 	WithContext(ctx context.Context) InsertBuilder
 	ToSQL() (string, []any)
-	Debug() string
+	PrintSQL() InsertBuilder
 	Clone() InsertBuilder
 }
 
@@ -43,6 +43,7 @@ type insertBuilder struct {
 	db      SQLXExecutor
 	dialect dialect.Dialect
 	ctx     context.Context
+	logger  Logger
 
 	table               string
 	columns             []string
@@ -50,6 +51,9 @@ type insertBuilder struct {
 	onConflict          string
 	onConflictDoNothing bool
 	fromSelect          SelectBuilder
+
+	// Print SQL flag
+	printSQL bool
 }
 
 func NewInsertBuilder(db SQLXExecutor, dialect dialect.Dialect, table string) InsertBuilder {
@@ -390,19 +394,43 @@ func (i *insertBuilder) ToSQL() (string, []any) {
 	return i.buildSQL()
 }
 
-func (i *insertBuilder) Debug() string {
-	sql, args := i.buildSQL()
-	// Simple placeholder replacement for debugging
-	for _, arg := range args {
-		sql = strings.Replace(sql, i.dialect.PlaceholderFormat(), fmt.Sprintf("'%v'", arg), 1)
-	}
-	return sql
+func (i *insertBuilder) PrintSQL() InsertBuilder {
+	i.printSQL = true
+	return i
+}
+
+func (i *insertBuilder) setLogger(logger Logger) {
+	i.logger = logger
 }
 
 func (i *insertBuilder) Exec() (sql.Result, error) {
 	sql, args := i.buildSQL()
-	fmt.Println(sql)
-	return i.db.ExecContext(i.ctx, sql, args...)
+
+	// Print SQL if needed
+	if i.printSQL {
+		// Simple placeholder replacement for debugging
+		formattedSQL := sql
+		for _, arg := range args {
+			formattedSQL = strings.Replace(formattedSQL, i.dialect.PlaceholderFormat(), fmt.Sprintf("'%v'", arg), 1)
+		}
+		fmt.Println(formattedSQL)
+	}
+
+	// Log query if logger is set
+	var start time.Time
+	if i.logger != nil {
+		start = time.Now()
+	}
+
+	result, err := i.db.ExecContext(i.ctx, sql, args...)
+
+	// Log query execution
+	if i.logger != nil {
+		duration := time.Since(start)
+		i.logger.LogQuery(i.ctx, sql, args, duration, err)
+	}
+
+	return result, err
 }
 
 func (i *insertBuilder) ExecReturnID() (int64, error) {

@@ -35,6 +35,6 @@ func Connect() {
 func main() {
 
 	Connect()
-
+	ExampleLogger()
 	defer DB.Close()
 }

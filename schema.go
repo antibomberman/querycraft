@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/antibomberman/querycraft/dialect"
 )
@@ -91,6 +92,7 @@ type schemaBuilder struct {
 	db      SQLXExecutor
 	dialect dialect.Dialect
 	ctx     context.Context
+	logger  Logger
 }
 
 func NewSchemaBuilder(db SQLXExecutor, dialect dialect.Dialect) SchemaBuilder {
@@ -112,7 +114,31 @@ func (s *schemaBuilder) CreateTable(name string, callback func(TableBuilder)) er
 	callback(builder)
 
 	query, args := builder.toSQL()
+
+	// Print SQL if logger is set or printSQL is true
+	if s.logger != nil {
+		// Simple placeholder replacement for debugging
+		formattedSQL := query
+		for _, arg := range args {
+			formattedSQL = strings.Replace(formattedSQL, s.dialect.PlaceholderFormat(), fmt.Sprintf("'%v'", arg), 1)
+		}
+		fmt.Println(formattedSQL)
+	}
+
+	// Log query if logger is set
+	var start time.Time
+	if s.logger != nil {
+		start = time.Now()
+	}
+
 	_, err := s.db.ExecContext(s.ctx, query, args...)
+
+	// Log query execution
+	if s.logger != nil {
+		duration := time.Since(start)
+		s.logger.LogQuery(s.ctx, query, args, duration, err)
+	}
+
 	return err
 }
 
@@ -122,13 +148,56 @@ func (s *schemaBuilder) AlterTable(name string, callback func(TableBuilder)) err
 	callback(builder)
 
 	query, args := builder.toSQL()
+
+	// Print SQL if logger is set or printSQL is true
+	if s.logger != nil {
+		// Simple placeholder replacement for debugging
+		formattedSQL := query
+		for _, arg := range args {
+			formattedSQL = strings.Replace(formattedSQL, s.dialect.PlaceholderFormat(), fmt.Sprintf("'%v'", arg), 1)
+		}
+		fmt.Println(formattedSQL)
+	}
+
+	// Log query if logger is set
+	var start time.Time
+	if s.logger != nil {
+		start = time.Now()
+	}
+
 	_, err := s.db.ExecContext(s.ctx, query, args...)
+
+	// Log query execution
+	if s.logger != nil {
+		duration := time.Since(start)
+		s.logger.LogQuery(s.ctx, query, args, duration, err)
+	}
+
 	return err
 }
 
 func (s *schemaBuilder) DropTable(name string) error {
 	query := fmt.Sprintf("DROP TABLE %s", s.dialect.QuoteIdentifier(name))
+
+	// Print SQL if logger is set or printSQL is true
+	if s.logger != nil {
+		fmt.Println(query)
+	}
+
+	// Log query if logger is set
+	var start time.Time
+	if s.logger != nil {
+		start = time.Now()
+	}
+
 	_, err := s.db.ExecContext(s.ctx, query)
+
+	// Log query execution
+	if s.logger != nil {
+		duration := time.Since(start)
+		s.logger.LogQuery(s.ctx, query, nil, duration, err)
+	}
+
 	return err
 }
 
@@ -136,7 +205,26 @@ func (s *schemaBuilder) RenameTable(from, to string) error {
 	query := fmt.Sprintf("ALTER TABLE %s RENAME TO %s",
 		s.dialect.QuoteIdentifier(from),
 		s.dialect.QuoteIdentifier(to))
+
+	// Print SQL if logger is set or printSQL is true
+	if s.logger != nil {
+		fmt.Println(query)
+	}
+
+	// Log query if logger is set
+	var start time.Time
+	if s.logger != nil {
+		start = time.Now()
+	}
+
 	_, err := s.db.ExecContext(s.ctx, query)
+
+	// Log query execution
+	if s.logger != nil {
+		duration := time.Since(start)
+		s.logger.LogQuery(s.ctx, query, nil, duration, err)
+	}
+
 	return err
 }
 
@@ -281,7 +369,26 @@ func (s *schemaBuilder) GetIndexes(table string) ([]IndexInfo, error) {
 }
 func (s *schemaBuilder) ClearTable(table string) error {
 	query := s.dialect.TruncateTableSQL(table)
+
+	// Print SQL if logger is set or printSQL is true
+	if s.logger != nil {
+		fmt.Println(query)
+	}
+
+	// Log query if logger is set
+	var start time.Time
+	if s.logger != nil {
+		start = time.Now()
+	}
+
 	_, err := s.db.ExecContext(s.ctx, query)
+
+	// Log query execution
+	if s.logger != nil {
+		duration := time.Since(start)
+		s.logger.LogQuery(s.ctx, query, nil, duration, err)
+	}
+
 	return err
 }
 
@@ -715,4 +822,8 @@ func quoteIdentifiers(dialect dialect.Dialect, identifiers []string) []string {
 		quoted[i] = dialect.QuoteIdentifier(id)
 	}
 	return quoted
+}
+
+func (s *schemaBuilder) setLogger(logger Logger) {
+	s.logger = logger
 }

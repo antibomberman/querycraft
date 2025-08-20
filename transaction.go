@@ -8,9 +8,23 @@ import (
 	"github.com/jmoiron/sqlx"
 )
 
-// Transaction interface extends QueryCraft interface for transaction-specific operations
+// Transaction interface provides transaction-specific operations
 type Transaction interface {
-	QueryCraft
+	// Builders
+	Select(columns ...string) SelectBuilder
+	Insert(table string) InsertBuilder
+	Upsert(table string) UpsertBuilder
+	Update(table string) UpdateBuilder
+	Delete(table string) DeleteBuilder
+
+	// Raw queries
+	Raw(query string, args ...any) Raw
+
+	// Bulk operations
+	Bulk() BulkBuilder
+
+	// Schema operations
+	Schema() SchemaBuilder
 
 	// Transaction control
 	Commit() error
@@ -19,6 +33,9 @@ type Transaction interface {
 
 	// Context
 	WithContext(ctx context.Context) Transaction
+
+	// Logging
+	SetLogger(logger Logger) Transaction
 }
 
 type transaction struct {
@@ -26,6 +43,7 @@ type transaction struct {
 	db      *sqlx.DB
 	dialect dialect.Dialect
 	ctx     context.Context
+	logger  Logger
 }
 
 func NewTransaction(tx *sqlx.Tx, db *sqlx.DB, dialect dialect.Dialect) Transaction {
@@ -56,27 +74,69 @@ func (t *transaction) GetTx() *sqlx.Tx {
 
 // Implement QueryCraft interface methods
 func (t *transaction) Select(columns ...string) SelectBuilder {
-	return NewSelectBuilder(t.tx, t.dialect, columns...)
+	builder := NewSelectBuilder(t.tx, t.dialect, columns...)
+	// Set logger if available
+	if t.logger != nil {
+		if sb, ok := builder.(*selectBuilder); ok {
+			sb.setLogger(t.logger)
+		}
+	}
+	return builder
 }
 
 func (t *transaction) Insert(table string) InsertBuilder {
-	return NewInsertBuilder(t.tx, t.dialect, table)
+	builder := NewInsertBuilder(t.tx, t.dialect, table)
+	// Set logger if available
+	if t.logger != nil {
+		if ib, ok := builder.(*insertBuilder); ok {
+			ib.setLogger(t.logger)
+		}
+	}
+	return builder
 }
 
 func (t *transaction) Upsert(table string) UpsertBuilder {
-	return NewUpsertBuilder(t.tx, t.dialect, table)
+	builder := NewUpsertBuilder(t.tx, t.dialect, table)
+	// Set logger if available
+	if t.logger != nil {
+		if ub, ok := builder.(*upsertBuilder); ok {
+			ub.setLogger(t.logger)
+		}
+	}
+	return builder
 }
 
 func (t *transaction) Update(table string) UpdateBuilder {
-	return NewUpdateBuilder(t.tx, t.dialect, table)
+	builder := NewUpdateBuilder(t.tx, t.dialect, table)
+	// Set logger if available
+	if t.logger != nil {
+		if ub, ok := builder.(*updateBuilder); ok {
+			ub.setLogger(t.logger)
+		}
+	}
+	return builder
 }
 
 func (t *transaction) Delete(table string) DeleteBuilder {
-	return NewDeleteBuilder(t.tx, t.dialect, table)
+	builder := NewDeleteBuilder(t.tx, t.dialect, table)
+	// Set logger if available
+	if t.logger != nil {
+		if db, ok := builder.(*deleteBuilder); ok {
+			db.setLogger(t.logger)
+		}
+	}
+	return builder
 }
 
 func (t *transaction) Raw(query string, args ...any) Raw {
-	return NewRaw(t.tx, query, args...)
+	builder := NewRaw(t.tx, query, args...)
+	// Set logger if available
+	if t.logger != nil {
+		if rb, ok := builder.(*rawQuery); ok {
+			rb.setLogger(t.logger)
+		}
+	}
+	return builder
 }
 
 func (t *transaction) Begin() (Transaction, error) {
@@ -89,11 +149,25 @@ func (t *transaction) GetDB() *sqlx.DB {
 }
 
 func (t *transaction) Bulk() BulkBuilder {
-	return NewBulkBuilder(t.tx, t.dialect)
+	builder := NewBulkBuilder(t.tx, t.dialect)
+	// Set logger if available
+	if t.logger != nil {
+		if bb, ok := builder.(*bulkBuilder); ok {
+			bb.setLogger(t.logger)
+		}
+	}
+	return builder
 }
 
 func (t *transaction) Schema() SchemaBuilder {
-	return NewSchemaBuilder(t.tx, t.dialect)
+	builder := NewSchemaBuilder(t.tx, t.dialect)
+	// Set logger if available
+	if t.logger != nil {
+		if sb, ok := builder.(*schemaBuilder); ok {
+			sb.setLogger(t.logger)
+		}
+	}
+	return builder
 }
 
 func (t *transaction) Migration() MigrationManager {
@@ -101,4 +175,9 @@ func (t *transaction) Migration() MigrationManager {
 	// так как это может привести к блокировке таблиц миграций
 	// Возвращаем nil или паникуем, чтобы показать, что это не поддерживается
 	panic("Migration is not supported in transaction")
+}
+
+func (t *transaction) SetLogger(logger Logger) Transaction {
+	t.logger = logger
+	return t
 }

@@ -30,7 +30,6 @@ type Logger interface {
 
 // Debuggable - интерфейс для отладки
 type Debuggable interface {
-	Debug() string
 	ToSQL() (string, []any)
 	Explain() ([]map[string]any, error)
 }

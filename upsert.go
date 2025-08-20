@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"reflect"
 	"strings"
+	"time"
 
 	"github.com/antibomberman/querycraft/dialect"
 )
@@ -32,7 +33,7 @@ type UpsertBuilder interface {
 	// Утилиты
 	WithContext(ctx context.Context) UpsertBuilder
 	ToSQL() (string, []any)
-	Debug() string
+	PrintSQL() UpsertBuilder
 }
 type UpsertAction int
 
@@ -46,6 +47,7 @@ type upsertBuilder struct {
 	db      SQLXExecutor
 	dialect dialect.Dialect
 	ctx     context.Context
+	logger  Logger
 
 	table           string
 	columns         []string
@@ -56,6 +58,9 @@ type upsertBuilder struct {
 	updateWhere     string
 	updateWhereArgs []any
 	action          UpsertAction
+
+	// Print SQL flag
+	printSQL bool
 }
 
 func NewUpsertBuilder(db SQLXExecutor, dialect dialect.Dialect, table string) UpsertBuilder {
@@ -198,18 +203,43 @@ func (u *upsertBuilder) ToSQL() (string, []any) {
 	return u.buildSQL()
 }
 
-func (u *upsertBuilder) Debug() string {
-	sql, args := u.buildSQL()
-	// Simple placeholder replacement for debugging
-	for _, arg := range args {
-		sql = strings.Replace(sql, u.dialect.PlaceholderFormat(), fmt.Sprintf("'%v'", arg), 1)
-	}
-	return sql
+func (u *upsertBuilder) PrintSQL() UpsertBuilder {
+	u.printSQL = true
+	return u
+}
+
+func (u *upsertBuilder) setLogger(logger Logger) {
+	u.logger = logger
 }
 
 func (u *upsertBuilder) Exec() (sql.Result, error) {
 	sql, args := u.buildSQL()
-	return u.db.ExecContext(u.ctx, sql, args...)
+
+	// Print SQL if needed
+	if u.printSQL {
+		// Simple placeholder replacement for debugging
+		formattedSQL := sql
+		for _, arg := range args {
+			formattedSQL = strings.Replace(formattedSQL, u.dialect.PlaceholderFormat(), fmt.Sprintf("'%v'", arg), 1)
+		}
+		fmt.Println(formattedSQL)
+	}
+
+	// Log query if logger is set
+	var start time.Time
+	if u.logger != nil {
+		start = time.Now()
+	}
+
+	result, err := u.db.ExecContext(u.ctx, sql, args...)
+
+	// Log query execution
+	if u.logger != nil {
+		duration := time.Since(start)
+		u.logger.LogQuery(u.ctx, sql, args, duration, err)
+	}
+
+	return result, err
 }
 
 func (u *upsertBuilder) ExecReturnID() (int64, error) {

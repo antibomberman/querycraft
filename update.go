@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"reflect"
 	"strings"
+	"time"
 
 	"github.com/antibomberman/querycraft/dialect"
 )
@@ -43,7 +44,7 @@ type UpdateBuilder interface {
 	// Утилиты
 	WithContext(ctx context.Context) UpdateBuilder
 	ToSQL() (string, []any)
-	Debug() string
+	PrintSQL() UpdateBuilder
 	Clone() UpdateBuilder
 }
 
@@ -51,6 +52,7 @@ type updateBuilder struct {
 	db      SQLXExecutor
 	dialect dialect.Dialect
 	ctx     context.Context
+	logger  Logger
 
 	table     string
 	sets      []string
@@ -60,6 +62,9 @@ type updateBuilder struct {
 	whereArgs []any
 	limit     *int
 	columns   []string
+
+	// Print SQL flag
+	printSQL bool
 }
 
 func NewUpdateBuilder(db SQLXExecutor, dialect dialect.Dialect, table string) UpdateBuilder {
@@ -275,18 +280,43 @@ func (u *updateBuilder) ToSQL() (string, []any) {
 	return u.buildSQL()
 }
 
-func (u *updateBuilder) Debug() string {
-	sql, args := u.buildSQL()
-	// Simple placeholder replacement for debugging
-	for _, arg := range args {
-		sql = strings.Replace(sql, u.dialect.PlaceholderFormat(), fmt.Sprintf("'%v'", arg), 1)
-	}
-	return sql
+func (u *updateBuilder) PrintSQL() UpdateBuilder {
+	u.printSQL = true
+	return u
+}
+
+func (u *updateBuilder) setLogger(logger Logger) {
+	u.logger = logger
 }
 
 func (u *updateBuilder) Exec() (sql.Result, error) {
 	sql, args := u.buildSQL()
-	return u.db.ExecContext(u.ctx, sql, args...)
+
+	// Print SQL if needed
+	if u.printSQL {
+		// Simple placeholder replacement for debugging
+		formattedSQL := sql
+		for _, arg := range args {
+			formattedSQL = strings.Replace(formattedSQL, u.dialect.PlaceholderFormat(), fmt.Sprintf("'%v'", arg), 1)
+		}
+		fmt.Println(formattedSQL)
+	}
+
+	// Log query if logger is set
+	var start time.Time
+	if u.logger != nil {
+		start = time.Now()
+	}
+
+	result, err := u.db.ExecContext(u.ctx, sql, args...)
+
+	// Log query execution
+	if u.logger != nil {
+		duration := time.Since(start)
+		u.logger.LogQuery(u.ctx, sql, args, duration, err)
+	}
+
+	return result, err
 }
 
 func (u *updateBuilder) WithContext(ctx context.Context) UpdateBuilder {

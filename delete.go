@@ -4,8 +4,10 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"github.com/antibomberman/querycraft/dialect"
 	"strings"
+	"time"
+
+	"github.com/antibomberman/querycraft/dialect"
 )
 
 type DeleteBuilder interface {
@@ -28,7 +30,7 @@ type DeleteBuilder interface {
 	// Утилиты
 	WithContext(ctx context.Context) DeleteBuilder
 	ToSQL() (string, []any)
-	Debug() string
+	PrintSQL() DeleteBuilder
 	Clone() DeleteBuilder
 }
 
@@ -36,6 +38,7 @@ type deleteBuilder struct {
 	db      SQLXExecutor
 	dialect dialect.Dialect
 	ctx     context.Context
+	logger  Logger
 
 	table     string
 	joins     []string
@@ -43,6 +46,9 @@ type deleteBuilder struct {
 	whereArgs []any
 	orders    []string
 	limit     *int
+
+	// Print SQL flag
+	printSQL bool
 }
 
 func NewDeleteBuilder(db SQLXExecutor, dialect dialect.Dialect, table string) DeleteBuilder {
@@ -130,18 +136,43 @@ func (d *deleteBuilder) ToSQL() (string, []any) {
 	return d.buildSQL()
 }
 
-func (d *deleteBuilder) Debug() string {
-	sql, args := d.buildSQL()
-	// Simple placeholder replacement for debugging
-	for _, arg := range args {
-		sql = strings.Replace(sql, d.dialect.PlaceholderFormat(), fmt.Sprintf("'%v'", arg), 1)
-	}
-	return sql
+func (d *deleteBuilder) PrintSQL() DeleteBuilder {
+	d.printSQL = true
+	return d
+}
+
+func (d *deleteBuilder) setLogger(logger Logger) {
+	d.logger = logger
 }
 
 func (d *deleteBuilder) Exec() (sql.Result, error) {
 	sql, args := d.buildSQL()
-	return d.db.ExecContext(d.ctx, sql, args...)
+
+	// Print SQL if needed
+	if d.printSQL {
+		// Simple placeholder replacement for debugging
+		formattedSQL := sql
+		for _, arg := range args {
+			formattedSQL = strings.Replace(formattedSQL, d.dialect.PlaceholderFormat(), fmt.Sprintf("'%v'", arg), 1)
+		}
+		fmt.Println(formattedSQL)
+	}
+
+	// Log query if logger is set
+	var start time.Time
+	if d.logger != nil {
+		start = time.Now()
+	}
+
+	result, err := d.db.ExecContext(d.ctx, sql, args...)
+
+	// Log query execution
+	if d.logger != nil {
+		duration := time.Since(start)
+		d.logger.LogQuery(d.ctx, sql, args, duration, err)
+	}
+
+	return result, err
 }
 
 func (d *deleteBuilder) WithContext(ctx context.Context) DeleteBuilder {

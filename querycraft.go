@@ -35,13 +35,15 @@ type queryCraft struct {
 	db         *sqlx.DB
 	dialect    dialect.Dialect
 	migrations MigrationManager
+	logger     Logger
 }
 
-func New(driver string, db *sql.DB) (QueryCraft, error) {
+func NewWithLogger(driver string, db *sql.DB, logger Logger) (QueryCraft, error) {
 	sqlxDB := sqlx.NewDb(db, driver)
 
 	qc := &queryCraft{
-		db: sqlxDB,
+		db:     sqlxDB,
+		logger: logger,
 	}
 
 	// Set dialect based on driver
@@ -58,28 +60,74 @@ func New(driver string, db *sql.DB) (QueryCraft, error) {
 	return qc, nil
 }
 
+func New(driver string, db *sql.DB) (QueryCraft, error) {
+	return NewWithLogger(driver, db, nil)
+}
+
 func (qc *queryCraft) Select(columns ...string) SelectBuilder {
-	return NewSelectBuilder(qc.db, qc.dialect, columns...)
+	builder := NewSelectBuilder(qc.db, qc.dialect, columns...)
+	// Set logger if available
+	if qc.logger != nil {
+		if sb, ok := builder.(*selectBuilder); ok {
+			sb.setLogger(qc.logger)
+		}
+	}
+	return builder
 }
 
 func (qc *queryCraft) Insert(table string) InsertBuilder {
-	return NewInsertBuilder(qc.db, qc.dialect, table)
+	builder := NewInsertBuilder(qc.db, qc.dialect, table)
+	// Set logger if available
+	if qc.logger != nil {
+		if ib, ok := builder.(*insertBuilder); ok {
+			ib.setLogger(qc.logger)
+		}
+	}
+	return builder
 }
 
 func (qc *queryCraft) Upsert(table string) UpsertBuilder {
-	return NewUpsertBuilder(qc.db, qc.dialect, table)
+	builder := NewUpsertBuilder(qc.db, qc.dialect, table)
+	// Set logger if available
+	if qc.logger != nil {
+		if ub, ok := builder.(*upsertBuilder); ok {
+			ub.setLogger(qc.logger)
+		}
+	}
+	return builder
 }
 
 func (qc *queryCraft) Update(table string) UpdateBuilder {
-	return NewUpdateBuilder(qc.db, qc.dialect, table)
+	builder := NewUpdateBuilder(qc.db, qc.dialect, table)
+	// Set logger if available
+	if qc.logger != nil {
+		if ub, ok := builder.(*updateBuilder); ok {
+			ub.setLogger(qc.logger)
+		}
+	}
+	return builder
 }
 
 func (qc *queryCraft) Delete(table string) DeleteBuilder {
-	return NewDeleteBuilder(qc.db, qc.dialect, table)
+	builder := NewDeleteBuilder(qc.db, qc.dialect, table)
+	// Set logger if available
+	if qc.logger != nil {
+		if db, ok := builder.(*deleteBuilder); ok {
+			db.setLogger(qc.logger)
+		}
+	}
+	return builder
 }
 
 func (qc *queryCraft) Raw(query string, args ...any) Raw {
-	return NewRaw(qc.db, query, args...)
+	builder := NewRaw(qc.db, query, args...)
+	// Set logger if available
+	if qc.logger != nil {
+		if rb, ok := builder.(*rawQuery); ok {
+			rb.setLogger(qc.logger)
+		}
+	}
+	return builder
 }
 
 func (qc *queryCraft) Begin() (Transaction, error) {
@@ -87,7 +135,14 @@ func (qc *queryCraft) Begin() (Transaction, error) {
 	if err != nil {
 		return nil, err
 	}
-	return NewTransaction(tx, qc.db, qc.dialect), nil
+
+	transaction := NewTransaction(tx, qc.db, qc.dialect)
+	// Set logger if available
+	if qc.logger != nil {
+		transaction = transaction.SetLogger(qc.logger)
+	}
+
+	return transaction, nil
 }
 
 func (qc *queryCraft) GetDB() *sqlx.DB {
@@ -95,13 +150,32 @@ func (qc *queryCraft) GetDB() *sqlx.DB {
 }
 
 func (qc *queryCraft) Bulk() BulkBuilder {
-	return NewBulkBuilder(qc.db, qc.dialect)
+	builder := NewBulkBuilder(qc.db, qc.dialect)
+	// Set logger if available
+	if qc.logger != nil {
+		if bb, ok := builder.(*bulkBuilder); ok {
+			bb.setLogger(qc.logger)
+		}
+	}
+	return builder
 }
 
 func (qc *queryCraft) Schema() SchemaBuilder {
-	return NewSchemaBuilder(qc.db, qc.dialect)
+	builder := NewSchemaBuilder(qc.db, qc.dialect)
+	// Set logger if available
+	if qc.logger != nil {
+		if sb, ok := builder.(*schemaBuilder); ok {
+			sb.setLogger(qc.logger)
+		}
+	}
+	return builder
 }
 
 func (qc *queryCraft) Migration() MigrationManager {
 	return qc.migrations
+}
+
+func (qc *queryCraft) SetLogger(logger Logger) QueryCraft {
+	qc.logger = logger
+	return qc
 }
