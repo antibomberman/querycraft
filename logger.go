@@ -2,6 +2,7 @@ package querycraft
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -92,13 +93,42 @@ func (l *FileLogger) LogQuery(ctx context.Context, query string, args []any, dur
 
 	// Create log entry
 	timestamp := time.Now()
-	logEntry := fmt.Sprintf(
-		"[%s] [QUERY] Duration: %v, Query: %s, Error: %v\n",
-		timestamp.Format("2006-01-02 15:04:05"),
-		duration,
-		formattedQuery,
-		err,
-	)
+	var logEntry string
+
+	if l.options.Format == LogFormatJSON {
+		// Create JSON log entry
+		logData := map[string]any{
+			"timestamp": timestamp.Format("2006-01-02 15:04:05"),
+			"type":      "QUERY",
+			"duration":  duration.String(),
+			"query":     formattedQuery,
+			"error":     err,
+		}
+
+		jsonData, err := json.Marshal(logData)
+		if err != nil {
+			// Fallback to text format if JSON marshaling fails
+			logEntry = fmt.Sprintf(
+				"[%s] [QUERY] Duration: %v, Query: %s, Error: %v, JSON_Error: %v\n",
+				timestamp.Format("2006-01-02 15:04:05"),
+				duration,
+				formattedQuery,
+				err,
+				err,
+			)
+		} else {
+			logEntry = string(jsonData) + "\n"
+		}
+	} else {
+		// Create text log entry
+		logEntry = fmt.Sprintf(
+			"[%s] [QUERY] Duration: %v, Query: %s, Error: %v\n",
+			timestamp.Format("2006-01-02 15:04:05"),
+			duration,
+			formattedQuery,
+			err,
+		)
+	}
 
 	// Print to console if PrintToConsole is enabled
 	if l.options.PrintToConsole {

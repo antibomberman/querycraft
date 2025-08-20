@@ -22,9 +22,9 @@ func ExampleLogger() {
 	qc, err := querycraft.New("mysql", db, querycraft.Options{
 		LogEnabled:        true,
 		LogLevel:          querycraft.LogLevelInfo,
-		LogFormat:         querycraft.LogFormatJSON,
-		LogSaveToFile:     true,
-		LogPrintToConsole: true,
+		LogFormat:         querycraft.LogFormatText,
+		LogSaveToFile:     false,
+		LogPrintToConsole: false,
 		LogDir:            "./storage/logs/sql/",
 		LogAutoCleanDays:  7,
 	})
