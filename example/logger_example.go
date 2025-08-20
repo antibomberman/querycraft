@@ -1,8 +1,9 @@
 package main
 
 import (
+	"database/sql"
+	"fmt"
 	"log"
-	"os"
 	"time"
 
 	"github.com/antibomberman/querycraft"
@@ -10,22 +11,23 @@ import (
 )
 
 func ExampleLogger() {
-	// Создание директории для логов
-	err := os.MkdirAll("./storage/logs/sql", 0755)
+	// Подключение к базе данных
+	db, err := sql.Open("mysql", "test_user:test_password@tcp(127.0.0.1:3336)/test_db?parseTime=true")
 	if err != nil {
 		log.Fatal(err)
 	}
+	defer db.Close()
 
-	// Создание логгера с опциями
-	loggerOptions := querycraft.DefaultLoggerOptions()
-	loggerOptions.Enabled = false
-	//loggerOptions.LogDir = "./storage/logs/sql/"
-	//loggerOptions.AutoCleanDays = 7
-
-	logger := querycraft.NewFileLogger(loggerOptions)
-
-	// Создание QueryCraft с логгером
-	qc, err := querycraft.NewWithLogger("mysql", DB, logger)
+	// Создание QueryCraft с опциями
+	qc, err := querycraft.New("mysql", db, querycraft.Options{
+		LogEnabled:        true,
+		LogLevel:          querycraft.LogLevelInfo,
+		LogFormat:         querycraft.LogFormatJSON,
+		LogSaveToFile:     true,
+		LogPrintToConsole: true,
+		LogDir:            "./storage/logs/sql/",
+		LogAutoCleanDays:  7,
+	})
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -43,7 +45,7 @@ func ExampleLogger() {
 		builder.Timestamp("updated_at").NotNull()
 	})
 
-	// Пример 1: Вставка пользователя
+	// Пример 1: Вставка пользователя с PrintSQL()
 	user := struct {
 		Name      string    `db:"name"`
 		Email     string    `db:"email"`
@@ -58,10 +60,11 @@ func ExampleLogger() {
 		UpdatedAt: time.Now(),
 	}
 
-	_, err = qc.Insert("users").Values(user).ExecReturnID()
+	id, err := qc.Insert("users").Values(user).PrintSQL().ExecReturnID()
 	if err != nil {
 		log.Fatal(err)
 	}
+	fmt.Printf("Вставлен пользователь с ID: %d\n", id)
 
 	// Пример 2: Выборка пользователей с PrintSQL()
 	var users []map[string]any
@@ -75,14 +78,7 @@ func ExampleLogger() {
 		Set("name", "John Smith").
 		Set("age", 31).
 		WhereEq("email", "john@example.com").
-		Exec()
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	// Пример 4: Удаление пользователя
-	_, err = qc.Delete("users").
-		WhereEq("email", "john@example.com").
+		PrintSQL().
 		Exec()
 	if err != nil {
 		log.Fatal(err)

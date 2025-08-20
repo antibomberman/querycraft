@@ -115,16 +115,6 @@ func (s *schemaBuilder) CreateTable(name string, callback func(TableBuilder)) er
 
 	query, args := builder.toSQL()
 
-	// Print SQL if logger is set or printSQL is true
-	if s.logger != nil {
-		// Simple placeholder replacement for debugging
-		formattedSQL := query
-		for _, arg := range args {
-			formattedSQL = strings.Replace(formattedSQL, s.dialect.PlaceholderFormat(), fmt.Sprintf("'%v'", arg), 1)
-		}
-		fmt.Println(formattedSQL)
-	}
-
 	// Log query if logger is set
 	var start time.Time
 	if s.logger != nil {
@@ -149,16 +139,6 @@ func (s *schemaBuilder) AlterTable(name string, callback func(TableBuilder)) err
 
 	query, args := builder.toSQL()
 
-	// Print SQL if logger is set or printSQL is true
-	if s.logger != nil {
-		// Simple placeholder replacement for debugging
-		formattedSQL := query
-		for _, arg := range args {
-			formattedSQL = strings.Replace(formattedSQL, s.dialect.PlaceholderFormat(), fmt.Sprintf("'%v'", arg), 1)
-		}
-		fmt.Println(formattedSQL)
-	}
-
 	// Log query if logger is set
 	var start time.Time
 	if s.logger != nil {
@@ -178,11 +158,6 @@ func (s *schemaBuilder) AlterTable(name string, callback func(TableBuilder)) err
 
 func (s *schemaBuilder) DropTable(name string) error {
 	query := fmt.Sprintf("DROP TABLE %s", s.dialect.QuoteIdentifier(name))
-
-	// Print SQL if logger is set or printSQL is true
-	if s.logger != nil {
-		fmt.Println(query)
-	}
 
 	// Log query if logger is set
 	var start time.Time
@@ -205,12 +180,6 @@ func (s *schemaBuilder) RenameTable(from, to string) error {
 	query := fmt.Sprintf("ALTER TABLE %s RENAME TO %s",
 		s.dialect.QuoteIdentifier(from),
 		s.dialect.QuoteIdentifier(to))
-
-	// Print SQL if logger is set or printSQL is true
-	if s.logger != nil {
-		fmt.Println(query)
-	}
-
 	// Log query if logger is set
 	var start time.Time
 	if s.logger != nil {
@@ -369,11 +338,6 @@ func (s *schemaBuilder) GetIndexes(table string) ([]IndexInfo, error) {
 }
 func (s *schemaBuilder) ClearTable(table string) error {
 	query := s.dialect.TruncateTableSQL(table)
-
-	// Print SQL if logger is set or printSQL is true
-	if s.logger != nil {
-		fmt.Println(query)
-	}
 
 	// Log query if logger is set
 	var start time.Time

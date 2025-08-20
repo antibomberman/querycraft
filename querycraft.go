@@ -8,6 +8,18 @@ import (
 	"github.com/jmoiron/sqlx"
 )
 
+// Options represents the options for QueryCraft
+type Options struct {
+	// Logger options
+	LogEnabled        bool
+	LogLevel          LogLevel
+	LogFormat         LogFormat
+	LogSaveToFile     bool
+	LogPrintToConsole bool
+	LogDir            string
+	LogAutoCleanDays  int
+}
+
 type QueryCraft interface {
 	// Builders
 	Select(columns ...string) SelectBuilder
@@ -60,8 +72,43 @@ func NewWithLogger(driver string, db *sql.DB, logger Logger) (QueryCraft, error)
 	return qc, nil
 }
 
-func New(driver string, db *sql.DB) (QueryCraft, error) {
-	return NewWithLogger(driver, db, nil)
+// DefaultOptions returns the default options for QueryCraft
+func DefaultOptions() Options {
+	return Options{
+		LogEnabled:        false,
+		LogLevel:          LogLevelInfo,
+		LogFormat:         LogFormatText,
+		LogSaveToFile:     true,
+		LogPrintToConsole: false,
+		LogDir:            "./storage/logs/sql/",
+		LogAutoCleanDays:  7,
+	}
+}
+
+func New(driver string, db *sql.DB, opts ...Options) (QueryCraft, error) {
+	var options Options
+	if len(opts) > 0 {
+		options = opts[0]
+	} else {
+		options = DefaultOptions()
+	}
+
+	// Create logger if logging is enabled
+	var logger Logger
+	if options.LogEnabled {
+		loggerOptions := LoggerOptions{
+			Enabled:        true,
+			Level:          options.LogLevel,
+			Format:         options.LogFormat,
+			SaveToFile:     options.LogSaveToFile,
+			PrintToConsole: options.LogPrintToConsole,
+			LogDir:         options.LogDir,
+			AutoCleanDays:  options.LogAutoCleanDays,
+		}
+		logger = NewFileLogger(loggerOptions)
+	}
+
+	return NewWithLogger(driver, db, logger)
 }
 
 func (qc *queryCraft) Select(columns ...string) SelectBuilder {
