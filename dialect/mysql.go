@@ -107,6 +107,10 @@ func (d *MySQLDialect) QuoteIdentifier(name string) string {
 	return fmt.Sprintf("`%s`", strings.ReplaceAll(name, "`", "``"))
 }
 
+func (d *MySQLDialect) TruncateTableSQL(table string) string {
+	return fmt.Sprintf("TRUNCATE TABLE %s", d.QuoteIdentifier(table))
+}
+
 func (d *MySQLDialect) HasTableQuery(name string) string {
 	return fmt.Sprintf("SELECT COUNT(*) > 0 FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name = '%s'", name)
 }

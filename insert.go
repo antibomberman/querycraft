@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"reflect"
 	"strings"
 
 	"github.com/antibomberman/querycraft/dialect"
@@ -29,7 +30,7 @@ type InsertBuilder interface {
 	// Выполнение
 	Exec() (sql.Result, error)
 	ExecReturnID() (int64, error)
-	ExecReturnIDs() ([]int64, error)
+	//ExecReturnIDs() ([]int64, error)
 
 	// Утилиты
 	WithContext(ctx context.Context) InsertBuilder
@@ -65,8 +66,97 @@ func (i *insertBuilder) Columns(columns ...string) InsertBuilder {
 }
 
 func (i *insertBuilder) Values(values ...any) InsertBuilder {
+	if len(values) == 1 {
+		val := values[0]
+		if val == nil {
+			i.values = append(i.values, values)
+			return i
+		}
+		v := reflect.ValueOf(val)
+		if v.Kind() == reflect.Ptr {
+			if v.IsNil() {
+				i.values = append(i.values, values)
+				return i
+			}
+			v = v.Elem()
+		}
+
+		switch v.Kind() {
+		case reflect.Struct:
+			i.addStruct(v)
+			return i
+		case reflect.Slice:
+			if _, ok := v.Interface().([]byte); ok {
+				break
+			}
+			elemType := v.Type().Elem()
+			isStructSlice := false
+			if elemType.Kind() == reflect.Struct {
+				isStructSlice = true
+			} else if elemType.Kind() == reflect.Ptr && elemType.Elem().Kind() == reflect.Struct {
+				isStructSlice = true
+			}
+
+			if isStructSlice {
+				for j := 0; j < v.Len(); j++ {
+					elem := v.Index(j)
+					if elem.Kind() == reflect.Ptr {
+						if elem.IsNil() {
+							// Or add a row of nils? For now, just skip.
+							continue
+						}
+						elem = elem.Elem()
+					}
+					i.addStruct(elem)
+				}
+				return i
+			}
+		default:
+			panic("unsupported type")
+		}
+	}
+
 	i.values = append(i.values, values)
 	return i
+}
+
+func (i *insertBuilder) addStruct(v reflect.Value) {
+	t := v.Type()
+
+	if len(i.columns) == 0 {
+		var columns []string
+		var rowValues []any
+		for j := 0; j < t.NumField(); j++ {
+			field := t.Field(j)
+			dbTag := field.Tag.Get("db")
+			if dbTag != "" && dbTag != "-" {
+				columns = append(columns, dbTag)
+				rowValues = append(rowValues, v.Field(j).Interface())
+			}
+		}
+		i.columns = columns
+		i.values = append(i.values, rowValues)
+		return
+	}
+
+	var rowValues []any
+	fieldsByTag := make(map[string]reflect.Value)
+	for j := 0; j < t.NumField(); j++ {
+		field := t.Field(j)
+		dbTag := field.Tag.Get("db")
+		if dbTag != "" && dbTag != "-" {
+			fieldsByTag[dbTag] = v.Field(j)
+		}
+	}
+
+	for _, column := range i.columns {
+		if fieldValue, ok := fieldsByTag[column]; ok && fieldValue.IsValid() {
+			rowValues = append(rowValues, fieldValue.Interface())
+		} else {
+			rowValues = append(rowValues, nil)
+		}
+	}
+	i.values = append(i.values, rowValues)
 }
 
 func (i *insertBuilder) ValuesMap(values map[string]any) InsertBuilder {

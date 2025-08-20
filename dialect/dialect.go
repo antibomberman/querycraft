@@ -41,4 +41,7 @@ type Dialect interface {
 
 	// QUOTES
 	QuoteIdentifier(name string) string
+
+	// TABLE OPERATIONS
+	TruncateTableSQL(table string) string
 }

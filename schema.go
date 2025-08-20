@@ -4,8 +4,9 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"github.com/antibomberman/querycraft/dialect"
 	"strings"
+
+	"github.com/antibomberman/querycraft/dialect"
 )
 
 type TableInfo struct {
@@ -28,6 +29,7 @@ type SchemaBuilder interface {
 	AlterTable(name string, callback func(TableBuilder)) error
 	DropTable(name string) error
 	RenameTable(from, to string) error
+	ClearTable(table string) error
 
 	// Проверки существования
 	HasTable(name string) (bool, error)
@@ -64,6 +66,7 @@ type TableBuilder interface {
 	UniqueIndex(columns ...string) TableBuilder
 	PrimaryKey(columns ...string) TableBuilder
 	ForeignKey(column, refTable, refColumn string) TableBuilder
+	//HasIndex(table string, index string) (bool, error)
 
 	// Удаление
 	DropColumn(name string) TableBuilder
@@ -140,8 +143,9 @@ func (s *schemaBuilder) RenameTable(from, to string) error {
 // Проверки существования
 func (s *schemaBuilder) HasTable(name string) (bool, error) {
 	query := s.dialect.HasTableQuery(name)
-	var exists bool
-	err := s.db.GetContext(s.ctx, &exists, query)
+
+	// Используем map для получения результата, так как выражение COUNT(*) > 0 возвращает столбец без имени
+	rows, err := s.db.QueryContext(s.ctx, query)
 	if err != nil {
 		// Если таблица не существует, некоторые драйверы могут вернуть ошибку
 		// В этом случае мы возвращаем false, nil
@@ -150,13 +154,51 @@ func (s *schemaBuilder) HasTable(name string) (bool, error) {
 		}
 		return false, err
 	}
-	return exists, nil
+	defer rows.Close()
+
+	// Получаем первую строку
+	if rows.Next() {
+		// Создаем слайс для значений
+		values, err := rows.Columns()
+		if err != nil {
+			return false, err
+		}
+
+		// Создаем slice для значений
+		valuePtrs := make([]any, len(values))
+		valueScan := make([]any, len(values))
+		for i := range values {
+			valuePtrs[i] = &valueScan[i]
+		}
+
+		// Сканируем значения
+		if err := rows.Scan(valuePtrs...); err != nil {
+			return false, err
+		}
+
+		// Преобразуем результат в bool
+		if len(valueScan) > 0 {
+			// Проверяем тип значения
+			switch v := valueScan[0].(type) {
+			case int64:
+				return v > 0, nil
+			case bool:
+				return v, nil
+			default:
+				// Если это другое значение, пытаемся преобразовать в bool
+				return v != nil, nil
+			}
+		}
+	}
+
+	return false, nil
 }
 
 func (s *schemaBuilder) HasColumn(table, column string) (bool, error) {
 	query := s.dialect.HasColumnQuery(table, column)
-	var exists bool
-	err := s.db.GetContext(s.ctx, &exists, query)
+
+	// Используем map для получения результата, так как выражение COUNT(*) > 0 возвращает столбец без имени
+	rows, err := s.db.QueryContext(s.ctx, query)
 	if err != nil {
 		// Если столбец не существует, некоторые драйверы могут вернуть ошибку
 		// В этом случае мы возвращаем false, nil
@@ -165,13 +207,51 @@ func (s *schemaBuilder) HasColumn(table, column string) (bool, error) {
 		}
 		return false, err
 	}
-	return exists, nil
+	defer rows.Close()
+
+	// Получаем первую строку
+	if rows.Next() {
+		// Создаем слайс для значений
+		values, err := rows.Columns()
+		if err != nil {
+			return false, err
+		}
+
+		// Создаем slice для значений
+		valuePtrs := make([]any, len(values))
+		valueScan := make([]any, len(values))
+		for i := range values {
+			valuePtrs[i] = &valueScan[i]
+		}
+
+		// Сканируем значения
+		if err := rows.Scan(valuePtrs...); err != nil {
+			return false, err
+		}
+
+		// Преобразуем результат в bool
+		if len(valueScan) > 0 {
+			// Проверяем тип значения
+			switch v := valueScan[0].(type) {
+			case int64:
+				return v > 0, nil
+			case bool:
+				return v, nil
+			default:
+				// Если это другое значение, пытаемся преобразовать в bool
+				return v != nil, nil
+			}
+		}
+	}
+
+	return false, nil
 }
 
 func (s *schemaBuilder) HasIndex(table, index string) (bool, error) {
 	query := s.dialect.HasIndexQuery(table, index)
-	var exists bool
-	err := s.db.GetContext(s.ctx, &exists, query)
+
+	// Используем map для получения результата, так как выражение COUNT(*) > 0 возвращает столбец без имени
+	rows, err := s.db.QueryContext(s.ctx, query)
 	if err != nil {
 		// Если индекс не существует, некоторые драйверы могут вернуть ошибку
 		// В этом случае мы возвращаем false, nil
@@ -180,29 +260,137 @@ func (s *schemaBuilder) HasIndex(table, index string) (bool, error) {
 		}
 		return false, err
 	}
-	return exists, nil
+	defer rows.Close()
+
+	// Получаем первую строку
+	if rows.Next() {
+		// Создаем слайс для значений
+		values, err := rows.Columns()
+		if err != nil {
+			return false, err
+		}
+
+		// Создаем slice для значений
+		valuePtrs := make([]any, len(values))
+		valueScan := make([]any, len(values))
+		for i := range values {
+			valuePtrs[i] = &valueScan[i]
+		}
+
+		// Сканируем значения
+		if err := rows.Scan(valuePtrs...); err != nil {
+			return false, err
+		}
+
+		// Преобразуем результат в bool
+		if len(valueScan) > 0 {
+			// Проверяем тип значения
+			switch v := valueScan[0].(type) {
+			case int64:
+				return v > 0, nil
+			case bool:
+				return v, nil
+			default:
+				// Если это другое значение, пытаемся преобразовать в bool
+				return v != nil, nil
+			}
+		}
+	}
+
+	return false, nil
 }
 
 // Информация о схеме
 func (s *schemaBuilder) GetTables() ([]TableInfo, error) {
 	query := s.dialect.GetTablesQuery()
+
+	rows, err := s.db.QueryContext(s.ctx, query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
 	var tables []TableInfo
-	err := s.db.SelectContext(s.ctx, &tables, query)
-	return tables, err
+	for rows.Next() {
+		var table TableInfo
+		if err := rows.Scan(&table.Name); err != nil {
+			return nil, err
+		}
+		tables = append(tables, table)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return tables, nil
 }
 
 func (s *schemaBuilder) GetColumns(table string) ([]ColumnInfo, error) {
 	query := s.dialect.GetColumnsQuery(table)
+
+	rows, err := s.db.QueryContext(s.ctx, query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
 	var columns []ColumnInfo
-	err := s.db.SelectContext(s.ctx, &columns, query)
-	return columns, err
+	for rows.Next() {
+		var column ColumnInfo
+		if err := rows.Scan(&column.Name, &column.Type); err != nil {
+			return nil, err
+		}
+		columns = append(columns, column)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return columns, nil
 }
 
 func (s *schemaBuilder) GetIndexes(table string) ([]IndexInfo, error) {
 	query := s.dialect.GetIndexesQuery(table)
+
+	rows, err := s.db.QueryContext(s.ctx, query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
 	var indexes []IndexInfo
-	err := s.db.SelectContext(s.ctx, &indexes, query)
-	return indexes, err
+	for rows.Next() {
+		var index IndexInfo
+		var columnsStr string
+
+		if err := rows.Scan(&index.Name, &columnsStr); err != nil {
+			return nil, err
+		}
+
+		// Разбиваем строку с колонками на срез
+		if columnsStr != "" {
+			index.Columns = strings.Split(columnsStr, ",")
+			// Удаляем пробелы вокруг имен колонок
+			for i, col := range index.Columns {
+				index.Columns[i] = strings.TrimSpace(col)
+			}
+		}
+
+		indexes = append(indexes, index)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return indexes, nil
+}
+func (s *schemaBuilder) ClearTable(table string) error {
+	query := s.dialect.TruncateTableSQL(table)
+	_, err := s.db.ExecContext(s.ctx, query)
+	return err
 }
 
 // TableBuilder implementation

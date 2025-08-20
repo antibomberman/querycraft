@@ -1,0 +1,106 @@
+package main
+
+import (
+	"fmt"
+	"log"
+	"time"
+
+	"github.com/antibomberman/querycraft"
+	_ "github.com/go-sql-driver/mysql"
+)
+
+func ExampleDelete() {
+	var err error
+	// Clear existing data
+	QC.Schema().ClearTable("users")
+
+	// Create users table
+	QC.Schema().CreateTable("users", func(builder querycraft.TableBuilder) {
+		builder.ID()
+		builder.String("name", 100).Nullable()
+		builder.String("email", 255).NotNull().Unique()
+		builder.Integer("age").Default(0)
+		builder.Timestamp("created_at").NotNull()
+		builder.Timestamp("updated_at").NotNull()
+	})
+
+	// Insert sample data
+	QC.Insert("users").
+		Columns("name", "email", "age", "created_at", "updated_at").
+		Values("John Doe", "john@example.com", 30, time.Now(), time.Now()).
+		Exec()
+
+	QC.Insert("users").
+		Columns("name", "email", "age", "created_at", "updated_at").
+		Values("Jane Smith", "jane@example.com", 25, time.Now(), time.Now()).
+		Exec()
+
+	QC.Insert("users").
+		Columns("name", "email", "age", "created_at", "updated_at").
+		Values("Bob Johnson", "bob@example.com", 17, time.Now(), time.Now()).
+		Exec()
+
+	fmt.Println("=== Delete Examples ===")
+
+	// Example 1: Delete specific user
+	result, err := QC.Delete("users").
+		WhereEq("email", "bob@example.com").
+		Exec()
+	if err != nil {
+		log.Fatal(err)
+	}
+	rowsAffected, _ := result.RowsAffected()
+	fmt.Printf("Deleted %d users\n", rowsAffected)
+
+	// Example 2: Delete with complex conditions
+	result, err = QC.Delete("users").
+		Where("age", "<", 18).
+		Exec()
+	if err != nil {
+		log.Fatal(err)
+	}
+	rowsAffected, _ = result.RowsAffected()
+	fmt.Printf("Deleted %d users with age < 18\n", rowsAffected)
+
+	// Example 3: Delete with IN clause
+	result, err = QC.Delete("users").
+		WhereIn("email", "john@example.com", "jane@example.com").
+		Exec()
+	if err != nil {
+		log.Fatal(err)
+	}
+	rowsAffected, _ = result.RowsAffected()
+	fmt.Printf("Deleted %d users with IN clause\n", rowsAffected)
+
+	// Insert more data for remaining examples
+	QC.Insert("users").
+		Columns("name", "email", "age", "created_at", "updated_at").
+		Values("Alice Cooper", "alice@example.com", 28, time.Now(), time.Now()).
+		Exec()
+
+	QC.Insert("users").
+		Columns("name", "email", "age", "created_at", "updated_at").
+		Values("Charlie Brown", "charlie@example.com", 22, time.Now(), time.Now()).
+		Exec()
+
+	// Example 4: Delete with JOIN
+	result, err = QC.Delete("users").
+		Join("users u2", "users.email = u2.email").
+		Where("users.age", "<", 25).
+		Exec()
+	if err != nil {
+		log.Fatal(err)
+	}
+	rowsAffected, _ = result.RowsAffected()
+	fmt.Printf("Deleted %d users with JOIN\n", rowsAffected)
+
+	// Example 5: Delete with limit
+	result, err = QC.Delete("users").
+		Limit(1).
+		Exec()
+	if err != nil {
+		log.Fatal(err)
+	}
+	rowsAffected, _ = result.RowsAffected()
+	fmt.Printf("Deleted %d users with LIMIT\n", rowsAffected)
+}

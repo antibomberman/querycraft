@@ -300,8 +300,13 @@ func (s *selectBuilder) WhereGroup(fn func(SelectBuilder) SelectBuilder) SelectB
 			}
 		}
 
-		// Добавляем скобки с префиксом AND
-		s.wheres = append(s.wheres, fmt.Sprintf("AND (%s)", strings.Join(whereParts, " ")))
+		// Добавляем скобки с префиксом AND только если у нас уже есть условия
+		if len(s.wheres) > 0 {
+			s.wheres = append(s.wheres, fmt.Sprintf("AND (%s)", strings.Join(whereParts, " ")))
+		} else {
+			// Если это первое условие, добавляем без префикса AND
+			s.wheres = append(s.wheres, fmt.Sprintf("(%s)", strings.Join(whereParts, " ")))
+		}
 		s.whereArgs = append(s.whereArgs, sb.whereArgs...)
 	}
 
@@ -338,8 +343,13 @@ func (s *selectBuilder) OrWhereGroup(fn func(SelectBuilder) SelectBuilder) Selec
 			}
 		}
 
-		// Добавляем скобки с OR
-		s.wheres = append(s.wheres, fmt.Sprintf("OR (%s)", strings.Join(whereParts, " ")))
+		// Добавляем скобки с OR только если у нас уже есть условия
+		if len(s.wheres) > 0 {
+			s.wheres = append(s.wheres, fmt.Sprintf("OR (%s)", strings.Join(whereParts, " ")))
+		} else {
+			// Если это первое условие, добавляем без префикса OR
+			s.wheres = append(s.wheres, fmt.Sprintf("(%s)", strings.Join(whereParts, " ")))
+		}
 		s.whereArgs = append(s.whereArgs, sb.whereArgs...)
 	}
 
@@ -553,7 +563,13 @@ func (s *selectBuilder) buildSQL() (string, []any) {
 			}
 		}
 
-		queryParts = append(queryParts, fmt.Sprintf("WHERE %s", strings.Join(whereParts, " ")))
+		// Формируем WHERE часть, убирая начальные AND/OR если они есть
+		whereClause := strings.Join(whereParts, " ")
+		// Убираем начальные AND или OR
+		whereClause = strings.TrimPrefix(whereClause, "AND ")
+		whereClause = strings.TrimPrefix(whereClause, "OR ")
+
+		queryParts = append(queryParts, fmt.Sprintf("WHERE %s", whereClause))
 		args = append(args, s.whereArgs...)
 	}
 
@@ -636,13 +652,37 @@ func (s *selectBuilder) Explain() ([]map[string]any, error) {
 }
 
 func (s *selectBuilder) One(dest any) error {
-	sql, args := s.buildSQL()
-	return s.db.GetContext(s.ctx, dest, sql, args...)
+	// Проверяем, является ли dest *map[string]any
+	// В этом случае используем Row()
+	switch dest.(type) {
+	case *map[string]any:
+		row, err := s.Row()
+		if err != nil {
+			return err
+		}
+		*(dest.(*map[string]any)) = row
+		return nil
+	default:
+		sql, args := s.buildSQL()
+		return s.db.GetContext(s.ctx, dest, sql, args...)
+	}
 }
 
 func (s *selectBuilder) All(dest any) error {
-	sql, args := s.buildSQL()
-	return s.db.SelectContext(s.ctx, dest, sql, args...)
+	// Проверяем, является ли dest *[]map[string]any
+	// В этом случае используем QueryxContext и RowsToMap
+	switch dest.(type) {
+	case *[]map[string]any:
+		rows, err := s.Rows()
+		if err != nil {
+			return err
+		}
+		*(dest.(*[]map[string]any)) = rows
+		return nil
+	default:
+		sql, args := s.buildSQL()
+		return s.db.SelectContext(s.ctx, dest, sql, args...)
+	}
 }
 
 func (s *selectBuilder) Row() (map[string]any, error) {
@@ -873,17 +913,17 @@ func (s *selectBuilder) Min(column string) (any, error) {
 
 func (s *selectBuilder) Exists() (bool, error) {
 	originalLimit := s.limit
-	s.limit = &[]int{1}[0] // Set limit to 1
+	s.limit = &[]int{1}[0]
 
 	defer func() {
 		s.limit = originalLimit
 	}()
 
-	sql, args := s.buildSQL()
-	checkSQL := fmt.Sprintf("SELECT EXISTS(%s) as exists", sql)
+	query, args := s.buildSQL()
+	checkSQL := fmt.Sprintf("SELECT EXISTS(%s) as _exists", query)
 
 	var result struct {
-		Exists bool `db:"exists"`
+		Exists bool `db:"_exists"`
 	}
 
 	err := s.db.GetContext(s.ctx, &result, checkSQL, args...)
