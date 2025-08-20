@@ -21,7 +21,7 @@ func TestWhereGroup(t *testing.T) {
 	sql, args := result.ToSQL()
 
 	expectedSQL := "SELECT * FROM `users` WHERE `status` = ? AND (`age` >= ? AND `age` <= ?)"
-	expectedArgs := []interface{}{"active", 18, 65}
+	expectedArgs := []any{"active", 18, 65}
 
 	assert.Equal(t, expectedSQL, sql)
 	assert.Equal(t, expectedArgs, args)
@@ -39,7 +39,7 @@ func TestOrWhereGroup(t *testing.T) {
 	sql, args := result.ToSQL()
 
 	expectedSQL := "SELECT * FROM `users` WHERE `status` = ? OR (`role` = ? OR `role` = ?)"
-	expectedArgs := []interface{}{"active", "admin", "moderator"}
+	expectedArgs := []any{"active", "admin", "moderator"}
 
 	assert.Equal(t, expectedSQL, sql)
 	assert.Equal(t, expectedArgs, args)

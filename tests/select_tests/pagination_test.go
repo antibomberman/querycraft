@@ -17,7 +17,7 @@ func TestLimit(t *testing.T) {
 	sql, args := result.ToSQL()
 
 	expectedSQL := "SELECT * FROM `users` LIMIT 10"
-	var expectedArgs []interface{}
+	var expectedArgs []any
 
 	assert.Equal(t, expectedSQL, sql)
 	assert.Equal(t, expectedArgs, args)
@@ -31,7 +31,7 @@ func TestOffset(t *testing.T) {
 	sql, args := result.ToSQL()
 
 	expectedSQL := "SELECT * FROM `users` OFFSET 20"
-	var expectedArgs []interface{}
+	var expectedArgs []any
 
 	assert.Equal(t, expectedSQL, sql)
 	assert.Equal(t, expectedArgs, args)
@@ -46,7 +46,7 @@ func TestPage(t *testing.T) {
 	sql, args := result.ToSQL()
 
 	expectedSQL := "SELECT * FROM `users` LIMIT 10 OFFSET 20"
-	var expectedArgs []interface{}
+	var expectedArgs []any
 
 	assert.Equal(t, expectedSQL, sql)
 	assert.Equal(t, expectedArgs, args)

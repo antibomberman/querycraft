@@ -17,7 +17,7 @@ func TestDeleteWhere(t *testing.T) {
 	sql, args := result.ToSQL()
 
 	expectedSQL := "DELETE FROM users WHERE `id` = ?"
-	expectedArgs := []interface{}{1}
+	expectedArgs := []any{1}
 
 	assert.Equal(t, expectedSQL, sql)
 	assert.Equal(t, expectedArgs, args)
@@ -31,7 +31,7 @@ func TestDeleteWhereEq(t *testing.T) {
 	sql, args := result.ToSQL()
 
 	expectedSQL := "DELETE FROM users WHERE `id` = ?"
-	expectedArgs := []interface{}{1}
+	expectedArgs := []any{1}
 
 	assert.Equal(t, expectedSQL, sql)
 	assert.Equal(t, expectedArgs, args)
@@ -45,7 +45,7 @@ func TestDeleteWhereIn(t *testing.T) {
 	sql, args := result.ToSQL()
 
 	expectedSQL := "DELETE FROM users WHERE `id` IN (?, ?, ?)"
-	expectedArgs := []interface{}{1, 2, 3}
+	expectedArgs := []any{1, 2, 3}
 
 	assert.Equal(t, expectedSQL, sql)
 	assert.Equal(t, expectedArgs, args)
@@ -59,7 +59,7 @@ func TestDeleteWhereRaw(t *testing.T) {
 	sql, args := result.ToSQL()
 
 	expectedSQL := "DELETE FROM users WHERE `created_at` < NOW() - INTERVAL 30 DAY"
-	var expectedArgs []interface{}
+	var expectedArgs []any
 
 	assert.Equal(t, expectedSQL, sql)
 	assert.Equal(t, expectedArgs, args)
@@ -73,7 +73,7 @@ func TestDeleteJoin(t *testing.T) {
 	sql, args := result.ToSQL()
 
 	expectedSQL := "DELETE FROM users JOIN orders ON `users`.`id` = `orders`.`user_id` WHERE `orders.status` = ?"
-	expectedArgs := []interface{}{"cancelled"}
+	expectedArgs := []any{"cancelled"}
 
 	assert.Equal(t, expectedSQL, sql)
 	assert.Equal(t, expectedArgs, args)
@@ -87,7 +87,7 @@ func TestDeleteWithLimit(t *testing.T) {
 	sql, args := result.ToSQL()
 
 	expectedSQL := "DELETE FROM users WHERE `active` = ? LIMIT 10"
-	expectedArgs := []interface{}{false}
+	expectedArgs := []any{false}
 
 	assert.Equal(t, expectedSQL, sql)
 	assert.Equal(t, expectedArgs, args)

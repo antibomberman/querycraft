@@ -17,7 +17,7 @@ func TestInsertValues(t *testing.T) {
 	sql, args := result.ToSQL()
 
 	expectedSQL := "INSERT INTO `users` (`name`, `email`) VALUES (?, ?)"
-	expectedArgs := []interface{}{"John", "john@example.com"}
+	expectedArgs := []any{"John", "john@example.com"}
 
 	assert.Equal(t, expectedSQL, sql)
 	assert.Equal(t, expectedArgs, args)
@@ -33,7 +33,7 @@ func TestInsertMultipleValues(t *testing.T) {
 	sql, args := result.ToSQL()
 
 	expectedSQL := "INSERT INTO `users` (`name`, `email`) VALUES (?, ?), (?, ?)"
-	expectedArgs := []interface{}{"John", "john@example.com", "Jane", "jane@example.com"}
+	expectedArgs := []any{"John", "john@example.com", "Jane", "jane@example.com"}
 
 	assert.Equal(t, expectedSQL, sql)
 	assert.Equal(t, expectedArgs, args)
@@ -43,7 +43,7 @@ func TestInsertValuesMap(t *testing.T) {
 	mockDB := &test_utils.MockSQLXExecutor{}
 	builder := querycraft.NewInsertBuilder(mockDB, &dialect.MySQLDialect{}, "users")
 
-	data := map[string]interface{}{
+	data := map[string]any{
 		"name":  "John",
 		"email": "john@example.com",
 	}
@@ -70,7 +70,7 @@ func TestInsertIgnore(t *testing.T) {
 
 	// В MySQL IGNORE добавляется как часть ключевого слова INSERT
 	expectedSQL := "INSERT INTO `users` (`name`, `email`) VALUES (?, ?)"
-	expectedArgs := []interface{}{"John", "john@example.com"}
+	expectedArgs := []any{"John", "john@example.com"}
 
 	assert.Equal(t, expectedSQL, sql)
 	assert.Equal(t, expectedArgs, args)
@@ -89,7 +89,7 @@ func TestInsertFromSelect(t *testing.T) {
 	sql, args := result.ToSQL()
 
 	expectedSQL := "INSERT INTO `users` (`name`, `email`) SELECT name, email FROM `temp_users` WHERE `active` = ?"
-	expectedArgs := []interface{}{true}
+	expectedArgs := []any{true}
 
 	assert.Equal(t, expectedSQL, sql)
 	assert.Equal(t, expectedArgs, args)

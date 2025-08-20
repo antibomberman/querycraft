@@ -76,7 +76,7 @@ func TestUpsertColumns(t *testing.T) {
 	builder.Columns("name", "email")
 	// Для метода Values с массивом значений нужно использовать reflect.Value
 	// или передавать map. Лучше использовать map:
-	data := map[string]interface{}{
+	data := map[string]any{
 		"name":  "John",
 		"email": "john@example.com",
 	}
@@ -97,7 +97,7 @@ func TestUpsertWithMap(t *testing.T) {
 	mockDB := &test_utils.MockSQLXExecutor{}
 	builder := querycraft.NewUpsertBuilder(mockDB, &dialect.MySQLDialect{}, "users")
 
-	data := map[string]interface{}{
+	data := map[string]any{
 		"id":    1,
 		"name":  "John",
 		"email": "john@example.com",

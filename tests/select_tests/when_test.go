@@ -18,7 +18,7 @@ func TestWhen(t *testing.T) {
 	sql, args := result.ToSQL()
 
 	expectedSQL := "SELECT * FROM `users` WHERE `status` = ?"
-	expectedArgs := []interface{}{"active"}
+	expectedArgs := []any{"active"}
 
 	assert.Equal(t, expectedSQL, sql)
 	assert.Equal(t, expectedArgs, args)
@@ -29,7 +29,7 @@ func TestWhen(t *testing.T) {
 	sql2, args2 := result2.ToSQL()
 
 	expectedSQL2 := "SELECT * FROM `users`"
-	var expectedArgs2 []interface{}
+	var expectedArgs2 []any
 
 	assert.Equal(t, expectedSQL2, sql2)
 	assert.Equal(t, expectedArgs2, args2)
@@ -46,7 +46,7 @@ func TestWhenFunc(t *testing.T) {
 	sql, args := result.ToSQL()
 
 	expectedSQL := "SELECT * FROM `users` WHERE `status` = ? AND `age` >= ?"
-	expectedArgs := []interface{}{"active", 18}
+	expectedArgs := []any{"active", 18}
 
 	assert.Equal(t, expectedSQL, sql)
 	assert.Equal(t, expectedArgs, args)
@@ -59,7 +59,7 @@ func TestWhenFunc(t *testing.T) {
 	sql2, args2 := result2.ToSQL()
 
 	expectedSQL2 := "SELECT * FROM `users`"
-	var expectedArgs2 []interface{}
+	var expectedArgs2 []any
 
 	assert.Equal(t, expectedSQL2, sql2)
 	assert.Equal(t, expectedArgs2, args2)

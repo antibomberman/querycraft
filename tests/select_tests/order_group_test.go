@@ -17,7 +17,7 @@ func TestOrderBy(t *testing.T) {
 	sql, args := result.ToSQL()
 
 	expectedSQL := "SELECT * FROM `users` ORDER BY `name`"
-	var expectedArgs []interface{}
+	var expectedArgs []any
 
 	assert.Equal(t, expectedSQL, sql)
 	assert.Equal(t, expectedArgs, args)
@@ -31,7 +31,7 @@ func TestOrderByDesc(t *testing.T) {
 	sql, args := result.ToSQL()
 
 	expectedSQL := "SELECT * FROM `users` ORDER BY `name` DESC"
-	var expectedArgs []interface{}
+	var expectedArgs []any
 
 	assert.Equal(t, expectedSQL, sql)
 	assert.Equal(t, expectedArgs, args)
@@ -45,7 +45,7 @@ func TestOrderByRaw(t *testing.T) {
 	sql, args := result.ToSQL()
 
 	expectedSQL := "SELECT * FROM `users` ORDER BY CASE WHEN `status` = 'active' THEN 1 ELSE 2 END"
-	var expectedArgs []interface{}
+	var expectedArgs []any
 
 	assert.Equal(t, expectedSQL, sql)
 	assert.Equal(t, expectedArgs, args)
@@ -59,7 +59,7 @@ func TestGroupBy(t *testing.T) {
 	sql, args := result.ToSQL()
 
 	expectedSQL := "SELECT category, COUNT(*) as count FROM `products` GROUP BY category"
-	var expectedArgs []interface{}
+	var expectedArgs []any
 
 	assert.Equal(t, expectedSQL, sql)
 	assert.Equal(t, expectedArgs, args)
@@ -73,7 +73,7 @@ func TestHaving(t *testing.T) {
 	sql, args := result.ToSQL()
 
 	expectedSQL := "SELECT category, COUNT(*) as count FROM `products` GROUP BY category HAVING COUNT(*) > ?"
-	expectedArgs := []interface{}{5}
+	expectedArgs := []any{5}
 
 	assert.Equal(t, expectedSQL, sql)
 	assert.Equal(t, expectedArgs, args)

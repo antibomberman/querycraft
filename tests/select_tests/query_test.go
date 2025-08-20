@@ -24,7 +24,7 @@ func TestSelectOrderFromUserWithJoin(t *testing.T) {
 	sql, args := result.ToSQL()
 
 	expectedSQL := "SELECT order.* FROM `user` as u INNER JOIN `order` ON order.user_id = u.id LIMIT 500"
-	var expectedArgs []interface{}
+	var expectedArgs []any
 
 	assert.Equal(t, expectedSQL, sql)
 	assert.Equal(t, expectedArgs, args)
@@ -41,7 +41,7 @@ func TestSelectOrderLimitWhere(t *testing.T) {
 	sql, args := result.ToSQL()
 
 	expectedSQL := "SELECT order.limit as _lim WHERE `_lim` <> ?"
-	expectedArgs := []interface{}{"0"}
+	expectedArgs := []any{"0"}
 
 	assert.Equal(t, expectedSQL, sql)
 	assert.Equal(t, expectedArgs, args)

@@ -15,7 +15,7 @@ func TestRawQuery(t *testing.T) {
 
 	// Проверяем, что запрос и аргументы сохраняются правильно
 	assert.Equal(t, "SELECT * FROM users WHERE id = ?", raw.Query())
-	assert.Equal(t, []interface{}{1}, raw.Args())
+	assert.Equal(t, []any{1}, raw.Args())
 }
 
 func TestRawQueryWithoutArgs(t *testing.T) {
@@ -36,5 +36,5 @@ func TestRawQueryWithMultipleArgs(t *testing.T) {
 
 	// Проверяем, что запрос и аргументы сохраняются правильно
 	assert.Equal(t, "SELECT * FROM users WHERE age BETWEEN ? AND ? AND status = ?", raw.Query())
-	assert.Equal(t, []interface{}{18, 65, "active"}, raw.Args())
+	assert.Equal(t, []any{18, 65, "active"}, raw.Args())
 }

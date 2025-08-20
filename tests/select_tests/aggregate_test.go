@@ -22,7 +22,7 @@ func TestCount(t *testing.T) {
 	sql, args := result.ToSQL()
 
 	expectedSQL := "SELECT * FROM `users`"
-	var expectedArgs []interface{}
+	var expectedArgs []any
 
 	assert.Equal(t, expectedSQL, sql)
 	assert.Equal(t, expectedArgs, args)
@@ -69,7 +69,7 @@ func TestMax(t *testing.T) {
 
 	// Аналогично CountColumn, протестируем только через интерфейс
 	_ = builder.From("posts").(interface {
-		Max(string) (interface{}, error)
+		Max(string) (any, error)
 	})
 }
 
@@ -79,6 +79,6 @@ func TestMin(t *testing.T) {
 
 	// Аналогично CountColumn, протестируем только через интерфейс
 	_ = builder.From("posts").(interface {
-		Min(string) (interface{}, error)
+		Min(string) (any, error)
 	})
 }

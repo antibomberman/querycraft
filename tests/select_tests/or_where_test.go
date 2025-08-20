@@ -17,7 +17,7 @@ func TestOrWhere(t *testing.T) {
 	sql, args := result.ToSQL()
 
 	expectedSQL := "SELECT * FROM `users` WHERE `status` = ? OR `role` = ?"
-	expectedArgs := []interface{}{"active", "admin"}
+	expectedArgs := []any{"active", "admin"}
 
 	assert.Equal(t, expectedSQL, sql)
 	assert.Equal(t, expectedArgs, args)
@@ -31,7 +31,7 @@ func TestOrWhereEq(t *testing.T) {
 	sql, args := result.ToSQL()
 
 	expectedSQL := "SELECT * FROM `users` WHERE `status` = ? OR `role` = ?"
-	expectedArgs := []interface{}{"active", "admin"}
+	expectedArgs := []any{"active", "admin"}
 
 	assert.Equal(t, expectedSQL, sql)
 	assert.Equal(t, expectedArgs, args)
@@ -45,7 +45,7 @@ func TestOrWhereIn(t *testing.T) {
 	sql, args := result.ToSQL()
 
 	expectedSQL := "SELECT * FROM `users` WHERE `status` = ? OR `id` IN (?, ?, ?)"
-	expectedArgs := []interface{}{"active", 1, 2, 3}
+	expectedArgs := []any{"active", 1, 2, 3}
 
 	assert.Equal(t, expectedSQL, sql)
 	assert.Equal(t, expectedArgs, args)
@@ -59,7 +59,7 @@ func TestOrWhereNull(t *testing.T) {
 	sql, args := result.ToSQL()
 
 	expectedSQL := "SELECT * FROM `users` WHERE `status` = ? OR `deleted_at` IS NULL"
-	expectedArgs := []interface{}{"active"}
+	expectedArgs := []any{"active"}
 
 	assert.Equal(t, expectedSQL, sql)
 	assert.Equal(t, expectedArgs, args)
@@ -73,7 +73,7 @@ func TestOrWhereRaw(t *testing.T) {
 	sql, args := result.ToSQL()
 
 	expectedSQL := "SELECT * FROM `users` WHERE `status` = ? OR `role` = 'admin' OR `role` = 'moderator'"
-	expectedArgs := []interface{}{"active"}
+	expectedArgs := []any{"active"}
 
 	assert.Equal(t, expectedSQL, sql)
 	assert.Equal(t, expectedArgs, args)

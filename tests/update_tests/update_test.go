@@ -17,7 +17,7 @@ func TestUpdateSet(t *testing.T) {
 	sql, args := result.ToSQL()
 
 	expectedSQL := "UPDATE users SET `name` = ?, `email` = ? WHERE `id` = ?"
-	expectedArgs := []interface{}{"John", "john@example.com", 1}
+	expectedArgs := []any{"John", "john@example.com", 1}
 
 	assert.Equal(t, expectedSQL, sql)
 	assert.Equal(t, expectedArgs, args)
@@ -27,7 +27,7 @@ func TestUpdateSetMap(t *testing.T) {
 	mockDB := &test_utils.MockSQLXExecutor{}
 	builder := querycraft.NewUpdateBuilder(mockDB, &dialect.MySQLDialect{}, "users")
 
-	data := map[string]interface{}{
+	data := map[string]any{
 		"name":  "John",
 		"email": "john@example.com",
 	}
@@ -54,7 +54,7 @@ func TestUpdateSetRaw(t *testing.T) {
 	sql, args := result.ToSQL()
 
 	expectedSQL := "UPDATE users SET `updated_at` = NOW() WHERE `id` = ?"
-	expectedArgs := []interface{}{1}
+	expectedArgs := []any{1}
 
 	assert.Equal(t, expectedSQL, sql)
 	assert.Equal(t, expectedArgs, args)
@@ -68,7 +68,7 @@ func TestUpdateIncrement(t *testing.T) {
 	sql, args := result.ToSQL()
 
 	expectedSQL := "UPDATE users SET `login_count` = `login_count` + ? WHERE `id` = ?"
-	expectedArgs := []interface{}{1, 1}
+	expectedArgs := []any{1, 1}
 
 	assert.Equal(t, expectedSQL, sql)
 	assert.Equal(t, expectedArgs, args)
@@ -82,7 +82,7 @@ func TestUpdateDecrement(t *testing.T) {
 	sql, args := result.ToSQL()
 
 	expectedSQL := "UPDATE users SET `balance` = `balance` - ? WHERE `id` = ?"
-	expectedArgs := []interface{}{100, 1}
+	expectedArgs := []any{100, 1}
 
 	assert.Equal(t, expectedSQL, sql)
 	assert.Equal(t, expectedArgs, args)
@@ -96,7 +96,7 @@ func TestUpdateWhereIn(t *testing.T) {
 	sql, args := result.ToSQL()
 
 	expectedSQL := "UPDATE users SET `status` = ? WHERE `id` IN (?, ?, ?)"
-	expectedArgs := []interface{}{"inactive", 1, 2, 3}
+	expectedArgs := []any{"inactive", 1, 2, 3}
 
 	assert.Equal(t, expectedSQL, sql)
 	assert.Equal(t, expectedArgs, args)
@@ -112,7 +112,7 @@ func TestUpdateJoin(t *testing.T) {
 	sql, args := result.ToSQL()
 
 	expectedSQL := "UPDATE users JOIN orders ON `users`.`id` = `orders`.`user_id` SET `users.status` = ? WHERE `orders.total` > ?"
-	expectedArgs := []interface{}{"premium", 1000}
+	expectedArgs := []any{"premium", 1000}
 
 	assert.Equal(t, expectedSQL, sql)
 	assert.Equal(t, expectedArgs, args)

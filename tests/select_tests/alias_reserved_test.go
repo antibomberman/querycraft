@@ -18,7 +18,7 @@ func TestSelectWithReservedTableName(t *testing.T) {
 	sql, args := result.ToSQL()
 
 	expectedSQL := "SELECT * FROM `order`"
-	var expectedArgs []interface{}
+	var expectedArgs []any
 
 	assert.Equal(t, expectedSQL, sql)
 	assert.Equal(t, expectedArgs, args)
@@ -33,7 +33,7 @@ func TestSelectWithTableAlias(t *testing.T) {
 	sql, args := result.ToSQL()
 
 	expectedSQL := "SELECT * FROM `order` as o"
-	var expectedArgs []interface{}
+	var expectedArgs []any
 
 	assert.Equal(t, expectedSQL, sql)
 	assert.Equal(t, expectedArgs, args)
@@ -47,7 +47,7 @@ func TestSelectWithColumnAliases(t *testing.T) {
 	sql, args := result.ToSQL()
 
 	expectedSQL := "SELECT id as order_id, product_name as product, quantity as qty FROM `order`"
-	var expectedArgs []interface{}
+	var expectedArgs []any
 
 	assert.Equal(t, expectedSQL, sql)
 	assert.Equal(t, expectedArgs, args)
@@ -61,7 +61,7 @@ func TestSelectWithReservedColumnNames(t *testing.T) {
 	sql, args := result.ToSQL()
 
 	expectedSQL := "SELECT `order` as order_number, `group` as group_name FROM `order`"
-	var expectedArgs []interface{}
+	var expectedArgs []any
 
 	assert.Equal(t, expectedSQL, sql)
 	assert.Equal(t, expectedArgs, args)
@@ -79,7 +79,7 @@ func TestJoinWithReservedTableNames(t *testing.T) {
 	sql, args := result.ToSQL()
 
 	expectedSQL := "SELECT * FROM `order` as o INNER JOIN `user` as u ON `o`.`user_id` = `u`.`id` WHERE `status` = ?"
-	expectedArgs := []interface{}{"completed"}
+	expectedArgs := []any{"completed"}
 
 	assert.Equal(t, expectedSQL, sql)
 	assert.Equal(t, expectedArgs, args)
