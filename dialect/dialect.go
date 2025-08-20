@@ -15,6 +15,7 @@ type Dialect interface {
 	InsertIgnore() string
 	InsertReplace() string
 	InsertOnConflict(columns []string, updateColumns []string, updateExcluded []string) string
+	InsertOnConflictDoNothing() string
 
 	// UPDATE
 	UpdateLimit(limit int) string

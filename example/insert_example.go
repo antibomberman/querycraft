@@ -49,7 +49,7 @@ func ExampleInsert() {
 		Values("Jane Smith", "jane@example.com", 25, time.Now(), time.Now()).
 		ExecReturnID()
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal(2, err)
 	}
 	fmt.Printf("Inserted user with ID: %d\n", id)
 
@@ -64,7 +64,7 @@ func ExampleInsert() {
 		}).
 		ExecReturnID()
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal(3, err)
 	}
 	fmt.Printf("Inserted user with ID: %d\n", id)
 
@@ -72,10 +72,19 @@ func ExampleInsert() {
 	id, err = QC.Insert("users").
 		Columns("name", "email", "age", "created_at", "updated_at").
 		Values("Duplicate Email", "john@example.com", 40, time.Now(), time.Now()).
-		OnConflictDoNothing().
+		Ignore().
 		ExecReturnID()
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal(4, err)
+	}
+	// Example 4: Insert with ON CONFLICT handling
+	id, err = QC.Insert("users").
+		Columns("name", "email", "age", "created_at", "updated_at").
+		Values("Duplicate Email", "john@example.com", 40, time.Now(), time.Now()).
+		Ignore().
+		ExecReturnID()
+	if err != nil {
+		log.Fatal(4, err)
 	}
 	fmt.Printf("Insert with conflict handling, ID: %d\n", id)
 
@@ -83,9 +92,10 @@ func ExampleInsert() {
 	id, err = QC.Insert("users").
 		Columns("name", "email", "age", "created_at", "updated_at").
 		FromSelect(QC.Select("name", "email", "age", "created_at", "updated_at").From("users").WhereEq("email", "john@example.com")).
+		Ignore().
 		ExecReturnID()
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal(5, err)
 	}
 	fmt.Printf("Inserted from select with ID: %d\n", id)
 }

@@ -55,6 +55,12 @@ func (d *MySQLDialect) InsertOnConflict(columns []string, updateColumns []string
 	return fmt.Sprintf("ON DUPLICATE KEY UPDATE %s", strings.Join(updates, ", "))
 }
 
+func (d *MySQLDialect) InsertOnConflictDoNothing() string {
+	// MySQL doesn't have a direct equivalent to ON CONFLICT DO NOTHING
+	// We can simulate it with ON DUPLICATE KEY UPDATE id=id (no-op)
+	return "ON DUPLICATE KEY UPDATE id=id"
+}
+
 func (d *MySQLDialect) UpdateLimit(limit int) string {
 	return fmt.Sprintf("LIMIT %d", limit)
 }

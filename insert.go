@@ -44,11 +44,12 @@ type insertBuilder struct {
 	dialect dialect.Dialect
 	ctx     context.Context
 
-	table      string
-	columns    []string
-	values     [][]any
-	onConflict string
-	fromSelect SelectBuilder
+	table               string
+	columns             []string
+	values              [][]any
+	onConflict          string
+	onConflictDoNothing bool
+	fromSelect          SelectBuilder
 }
 
 func NewInsertBuilder(db SQLXExecutor, dialect dialect.Dialect, table string) InsertBuilder {
@@ -202,7 +203,7 @@ func (i *insertBuilder) ValuesMaps(values []map[string]any) InsertBuilder {
 func (i *insertBuilder) OnConflictDoNothing() InsertBuilder {
 	// Для MySQL используем INSERT IGNORE
 	// Это будет обработано в диалекте
-	i.onConflict = "IGNORE"
+	i.onConflictDoNothing = true
 	return i
 }
 
@@ -226,13 +227,14 @@ func (i *insertBuilder) WithContext(ctx context.Context) InsertBuilder {
 func (i *insertBuilder) Clone() InsertBuilder {
 	// Create a deep copy
 	clone := &insertBuilder{
-		db:         i.db,
-		dialect:    i.dialect,
-		ctx:        i.ctx,
-		table:      i.table,
-		columns:    make([]string, len(i.columns)),
-		onConflict: i.onConflict,
-		fromSelect: i.fromSelect,
+		db:                  i.db,
+		dialect:             i.dialect,
+		ctx:                 i.ctx,
+		table:               i.table,
+		columns:             make([]string, len(i.columns)),
+		onConflict:          i.onConflict,
+		onConflictDoNothing: i.onConflictDoNothing,
+		fromSelect:          i.fromSelect,
 	}
 
 	copy(clone.columns, i.columns)
@@ -250,7 +252,7 @@ func (i *insertBuilder) Clone() InsertBuilder {
 //Exec methods
 
 func (i *insertBuilder) Ignore() InsertBuilder {
-	// This will be handled by the dialect
+	i.onConflict = "IGNORE"
 	return i
 }
 
@@ -307,6 +309,12 @@ func (i *insertBuilder) buildValuesSQL() (string, []any) {
 		// For MySQL, this would be ON DUPLICATE KEY UPDATE
 		// This should be handled by the dialect
 		queryParts = append(queryParts, i.dialect.InsertOnConflict(i.columns, i.columns, nil))
+	} else if i.onConflictDoNothing {
+		// Handle ON CONFLICT DO NOTHING
+		onConflictClause := i.dialect.InsertOnConflictDoNothing()
+		if onConflictClause != "" {
+			queryParts = append(queryParts, onConflictClause)
+		}
 	}
 
 	return strings.Join(queryParts, " "), args
@@ -317,7 +325,14 @@ func (i *insertBuilder) buildFromSelectSQL() (string, []any) {
 	var args []any
 
 	// INSERT keyword will be determined by dialect
-	queryParts = append(queryParts, "INSERT INTO")
+	insertKeyword := "INSERT INTO"
+
+	// Handle conflict resolution for IGNORE
+	if i.onConflict == "IGNORE" {
+		insertKeyword = i.dialect.InsertIgnore()
+	}
+
+	queryParts = append(queryParts, insertKeyword)
 	queryParts = append(queryParts, i.dialect.QuoteIdentifier(i.table))
 
 	// Get SQL from select builder
@@ -333,6 +348,26 @@ func (i *insertBuilder) buildFromSelectSQL() (string, []any) {
 
 	queryParts = append(queryParts, selectSQL)
 	args = append(args, selectArgs...)
+
+	// Handle conflict resolution for UPDATE
+	if i.onConflict == "UPDATE" {
+		queryParts = append(queryParts, i.dialect.InsertOnConflict(i.columns, i.columns, nil))
+	} else if i.onConflict == "IGNORE" && insertKeyword == "INSERT INTO" {
+		// Special case for databases that don't have INSERT IGNORE syntax
+		// but support ON CONFLICT DO NOTHING
+		onConflictClause := i.dialect.InsertOnConflictDoNothing()
+		if onConflictClause != "" {
+			queryParts = append(queryParts, onConflictClause)
+		}
+	} else if i.onConflict == "IGNORE" && insertKeyword == "INSERT IGNORE" {
+		// For MySQL, INSERT IGNORE already handles conflicts, no additional clause needed
+	} else if i.onConflictDoNothing {
+		// Handle ON CONFLICT DO NOTHING
+		onConflictClause := i.dialect.InsertOnConflictDoNothing()
+		if onConflictClause != "" {
+			queryParts = append(queryParts, onConflictClause)
+		}
+	}
 
 	return strings.Join(queryParts, " "), args
 }
