@@ -200,7 +200,9 @@ func (i *insertBuilder) ValuesMaps(values []map[string]any) InsertBuilder {
 }
 
 func (i *insertBuilder) OnConflictDoNothing() InsertBuilder {
-	i.onConflict = "DO NOTHING"
+	// Для MySQL используем INSERT IGNORE
+	// Это будет обработано в диалекте
+	i.onConflict = "IGNORE"
 	return i
 }
 
@@ -269,7 +271,14 @@ func (i *insertBuilder) buildValuesSQL() (string, []any) {
 	var args []any
 
 	// INSERT keyword will be determined by dialect
-	queryParts = append(queryParts, "INSERT INTO")
+	insertKeyword := "INSERT INTO"
+
+	// Handle conflict resolution for IGNORE
+	if i.onConflict == "IGNORE" {
+		insertKeyword = i.dialect.InsertIgnore()
+	}
+
+	queryParts = append(queryParts, insertKeyword)
 	queryParts = append(queryParts, i.dialect.QuoteIdentifier(i.table))
 
 	if len(i.columns) > 0 {
@@ -293,16 +302,11 @@ func (i *insertBuilder) buildValuesSQL() (string, []any) {
 		queryParts = append(queryParts, "VALUES", strings.Join(valueParts, ", "))
 	}
 
-	// Handle conflict resolution
-	if i.onConflict != "" {
-		switch i.onConflict {
-		case "DO NOTHING":
-			queryParts = append(queryParts, "ON CONFLICT DO NOTHING")
-		case "UPDATE":
-			// For MySQL, this would be ON DUPLICATE KEY UPDATE
-			// For now, we'll add a placeholder
-			queryParts = append(queryParts, "ON DUPLICATE KEY UPDATE")
-		}
+	// Handle conflict resolution for UPDATE
+	if i.onConflict == "UPDATE" {
+		// For MySQL, this would be ON DUPLICATE KEY UPDATE
+		// This should be handled by the dialect
+		queryParts = append(queryParts, i.dialect.InsertOnConflict(i.columns, i.columns, nil))
 	}
 
 	return strings.Join(queryParts, " "), args
@@ -348,6 +352,7 @@ func (i *insertBuilder) Debug() string {
 
 func (i *insertBuilder) Exec() (sql.Result, error) {
 	sql, args := i.buildSQL()
+	fmt.Println(sql)
 	return i.db.ExecContext(i.ctx, sql, args...)
 }
 
