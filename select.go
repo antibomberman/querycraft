@@ -64,6 +64,8 @@ type SelectBuilder interface {
 	Limit(limit int) SelectBuilder
 	Offset(offset int) SelectBuilder
 	Page(page, perPage int) SelectBuilder
+	Paginate(page, perPage int) (*PaginationResult, error)
+	KeysetPaginate(column string, lastValue any, perPage int, direction string) (*KeysetPaginationResult, error)
 
 	// Выполнение запросов
 	One(dest any) error
@@ -94,6 +96,25 @@ type SelectBuilder interface {
 	ToSQL() (string, []any)
 	PrintSQL() SelectBuilder
 	Explain() ([]map[string]any, error)
+}
+
+// PaginationResult represents the result of pagination
+type PaginationResult struct {
+	Data       []map[string]any `json:"data"`
+	Total      int64            `json:"total"`
+	PerPage    int              `json:"per_page"`
+	CurrentPage int             `json:"current_page"`
+	LastPage   int              `json:"last_page"`
+	From       int              `json:"from"`
+	To         int              `json:"to"`
+}
+
+// KeysetPaginationResult represents the result of keyset pagination
+type KeysetPaginationResult struct {
+	Data       []map[string]any `json:"data"`
+	HasMore    bool             `json:"has_more"`
+	NextCursor any              `json:"next_cursor,omitempty"`
+	PrevCursor any              `json:"prev_cursor,omitempty"`
 }
 
 type FullTextBuilder interface {
@@ -464,6 +485,108 @@ func (s *selectBuilder) Offset(offset int) SelectBuilder {
 func (s *selectBuilder) Page(page, perPage int) SelectBuilder {
 	offset := (page - 1) * perPage
 	return s.Limit(perPage).Offset(offset)
+}
+
+func (s *selectBuilder) Paginate(page, perPage int) (*PaginationResult, error) {
+	// Calculate offset
+	offset := (page - 1) * perPage
+	
+	// Get total count
+	count, err := s.Clone().Count()
+	if err != nil {
+		return nil, err
+	}
+	
+	// Calculate last page
+	lastPage := int((count + int64(perPage) - 1) / int64(perPage))
+	
+	// Apply limit and offset
+	s.Limit(perPage).Offset(offset)
+	
+	// Get data
+	data, err := s.Rows()
+	if err != nil {
+		return nil, err
+	}
+	
+	// Calculate from and to
+	from := 0
+	to := 0
+	if count > 0 {
+		from = offset + 1
+		to = offset + len(data)
+	}
+	
+	return &PaginationResult{
+		Data:        data,
+		Total:       count,
+		PerPage:     perPage,
+		CurrentPage: page,
+		LastPage:    lastPage,
+		From:        from,
+		To:          to,
+	}, nil
+}
+
+func (s *selectBuilder) KeysetPaginate(column string, lastValue any, perPage int, direction string) (*KeysetPaginationResult, error) {
+	// Validate direction
+	if direction != "asc" && direction != "desc" {
+		direction = "asc"
+	}
+	
+	// Add keyset condition
+	if lastValue != nil {
+		if direction == "asc" {
+			s.Where(column, ">", lastValue)
+		} else {
+			s.Where(column, "<", lastValue)
+		}
+	}
+	
+	// Apply ordering
+	if direction == "asc" {
+		s.OrderBy(column)
+	} else {
+		s.OrderByDesc(column)
+	}
+	
+	// Apply limit
+	s.Limit(perPage + 1) // Get one extra record to check if there are more
+	
+	// Get data
+	data, err := s.Rows()
+	if err != nil {
+		return nil, err
+	}
+	
+	// Check if there are more records
+	hasMore := false
+	if len(data) > perPage {
+		hasMore = true
+		// Remove the extra record
+		data = data[:perPage]
+	}
+	
+	// Get next and previous cursors
+	var nextCursor, prevCursor any
+	if len(data) > 0 {
+		if hasMore {
+			// Next cursor is the last record's column value
+			lastRecord := data[len(data)-1]
+			nextCursor = lastRecord[column]
+		}
+		
+		// Previous cursor is the first record's column value
+		firstRecord := data[0]
+		prevCursor = firstRecord[column]
+	}
+	
+	return &KeysetPaginationResult{
+		Data:       data,
+		HasMore:    hasMore,
+		NextCursor: nextCursor,
+		PrevCursor: prevCursor,
+	}, nil
 }
 
 func (s *selectBuilder) WithContext(ctx context.Context) SelectBuilder {

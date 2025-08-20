@@ -77,6 +77,7 @@ Check out the [examples](example/) directory for comprehensive examples of all Q
 - [Logger Example](example/logger_example.go) - Examples of SQL query logging and debugging
 - [Raw Queries](example/raw_example.go) - Raw SQL queries
 - [Migrations](example/migration_example.go) - Database migrations
+- [Pagination Example](example/pagination_example.go) - Examples of pagination with offset and keyset pagination
 
 ## Documentation
 
