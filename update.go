@@ -91,12 +91,21 @@ func (u *updateBuilder) SetMap(values map[string]any) UpdateBuilder {
 }
 
 func (u *updateBuilder) SetStruct(data any) UpdateBuilder {
+	// Check for nil data
+	if data == nil {
+		return u
+	}
+
 	// Use reflection to extract fields and their values
 	v := reflect.ValueOf(data)
 	t := reflect.TypeOf(data)
 
 	// Handle pointers
 	if v.Kind() == reflect.Ptr {
+		// Check for nil pointer
+		if v.IsNil() {
+			return u
+		}
 		v = v.Elem()
 		t = t.Elem()
 	}

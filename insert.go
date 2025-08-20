@@ -165,9 +165,12 @@ func (i *insertBuilder) ValuesMap(values map[string]any) InsertBuilder {
 	var columns []string
 	var vals []any
 
-	for col, val := range values {
-		columns = append(columns, col)
-		vals = append(vals, val)
+	// Check for nil map
+	if values != nil {
+		for col, val := range values {
+			columns = append(columns, col)
+			vals = append(vals, val)
+		}
 	}
 
 	i.columns = columns
@@ -176,7 +179,13 @@ func (i *insertBuilder) ValuesMap(values map[string]any) InsertBuilder {
 }
 
 func (i *insertBuilder) ValuesMaps(values []map[string]any) InsertBuilder {
-	if len(values) == 0 {
+	// Check for nil slice
+	if values == nil || len(values) == 0 {
+		return i
+	}
+
+	// Check for nil map in first element
+	if values[0] == nil {
 		return i
 	}
 
@@ -190,6 +199,11 @@ func (i *insertBuilder) ValuesMaps(values []map[string]any) InsertBuilder {
 
 	// Add values for each map
 	for _, m := range values {
+		// Check for nil map
+		if m == nil {
+			continue
+		}
+
 		var vals []any
 		for _, col := range columns {
 			vals = append(vals, m[col])
@@ -398,15 +412,4 @@ func (i *insertBuilder) ExecReturnID() (int64, error) {
 	}
 
 	return result.LastInsertId()
-}
-
-func (i *insertBuilder) ExecReturnIDs() ([]int64, error) {
-	// For multiple inserts, we can only return the first ID in most databases
-	// This is a limitation of the SQL standard
-	id, err := i.ExecReturnID()
-	if err != nil {
-		return nil, err
-	}
-
-	return []int64{id}, nil
 }

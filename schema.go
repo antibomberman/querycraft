@@ -144,8 +144,8 @@ func (s *schemaBuilder) RenameTable(from, to string) error {
 func (s *schemaBuilder) HasTable(name string) (bool, error) {
 	query := s.dialect.HasTableQuery(name)
 
-	// Используем map для получения результата, так как выражение COUNT(*) > 0 возвращает столбец без имени
-	rows, err := s.db.QueryContext(s.ctx, query)
+	var exists bool
+	err := s.db.GetContext(s.ctx, &exists, query)
 	if err != nil {
 		// Если таблица не существует, некоторые драйверы могут вернуть ошибку
 		// В этом случае мы возвращаем false, nil
@@ -154,51 +154,15 @@ func (s *schemaBuilder) HasTable(name string) (bool, error) {
 		}
 		return false, err
 	}
-	defer rows.Close()
 
-	// Получаем первую строку
-	if rows.Next() {
-		// Создаем слайс для значений
-		values, err := rows.Columns()
-		if err != nil {
-			return false, err
-		}
-
-		// Создаем slice для значений
-		valuePtrs := make([]any, len(values))
-		valueScan := make([]any, len(values))
-		for i := range values {
-			valuePtrs[i] = &valueScan[i]
-		}
-
-		// Сканируем значения
-		if err := rows.Scan(valuePtrs...); err != nil {
-			return false, err
-		}
-
-		// Преобразуем результат в bool
-		if len(valueScan) > 0 {
-			// Проверяем тип значения
-			switch v := valueScan[0].(type) {
-			case int64:
-				return v > 0, nil
-			case bool:
-				return v, nil
-			default:
-				// Если это другое значение, пытаемся преобразовать в bool
-				return v != nil, nil
-			}
-		}
-	}
-
-	return false, nil
+	return exists, nil
 }
 
 func (s *schemaBuilder) HasColumn(table, column string) (bool, error) {
 	query := s.dialect.HasColumnQuery(table, column)
 
-	// Используем map для получения результата, так как выражение COUNT(*) > 0 возвращает столбец без имени
-	rows, err := s.db.QueryContext(s.ctx, query)
+	var exists bool
+	err := s.db.GetContext(s.ctx, &exists, query)
 	if err != nil {
 		// Если столбец не существует, некоторые драйверы могут вернуть ошибку
 		// В этом случае мы возвращаем false, nil
@@ -207,51 +171,15 @@ func (s *schemaBuilder) HasColumn(table, column string) (bool, error) {
 		}
 		return false, err
 	}
-	defer rows.Close()
 
-	// Получаем первую строку
-	if rows.Next() {
-		// Создаем слайс для значений
-		values, err := rows.Columns()
-		if err != nil {
-			return false, err
-		}
-
-		// Создаем slice для значений
-		valuePtrs := make([]any, len(values))
-		valueScan := make([]any, len(values))
-		for i := range values {
-			valuePtrs[i] = &valueScan[i]
-		}
-
-		// Сканируем значения
-		if err := rows.Scan(valuePtrs...); err != nil {
-			return false, err
-		}
-
-		// Преобразуем результат в bool
-		if len(valueScan) > 0 {
-			// Проверяем тип значения
-			switch v := valueScan[0].(type) {
-			case int64:
-				return v > 0, nil
-			case bool:
-				return v, nil
-			default:
-				// Если это другое значение, пытаемся преобразовать в bool
-				return v != nil, nil
-			}
-		}
-	}
-
-	return false, nil
+	return exists, nil
 }
 
 func (s *schemaBuilder) HasIndex(table, index string) (bool, error) {
 	query := s.dialect.HasIndexQuery(table, index)
 
-	// Используем map для получения результата, так как выражение COUNT(*) > 0 возвращает столбец без имени
-	rows, err := s.db.QueryContext(s.ctx, query)
+	var exists bool
+	err := s.db.GetContext(s.ctx, &exists, query)
 	if err != nil {
 		// Если индекс не существует, некоторые драйверы могут вернуть ошибку
 		// В этом случае мы возвращаем false, nil
@@ -260,44 +188,8 @@ func (s *schemaBuilder) HasIndex(table, index string) (bool, error) {
 		}
 		return false, err
 	}
-	defer rows.Close()
 
-	// Получаем первую строку
-	if rows.Next() {
-		// Создаем слайс для значений
-		values, err := rows.Columns()
-		if err != nil {
-			return false, err
-		}
-
-		// Создаем slice для значений
-		valuePtrs := make([]any, len(values))
-		valueScan := make([]any, len(values))
-		for i := range values {
-			valuePtrs[i] = &valueScan[i]
-		}
-
-		// Сканируем значения
-		if err := rows.Scan(valuePtrs...); err != nil {
-			return false, err
-		}
-
-		// Преобразуем результат в bool
-		if len(valueScan) > 0 {
-			// Проверяем тип значения
-			switch v := valueScan[0].(type) {
-			case int64:
-				return v > 0, nil
-			case bool:
-				return v, nil
-			default:
-				// Если это другое значение, пытаемся преобразовать в bool
-				return v != nil, nil
-			}
-		}
-	}
-
-	return false, nil
+	return exists, nil
 }
 
 // Информация о схеме

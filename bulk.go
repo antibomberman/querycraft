@@ -69,6 +69,11 @@ func (b *bulkBuilder) WithContext(ctx context.Context) BulkBuilder {
 
 // Bulk Insert
 func (b *bulkBuilder) BulkInsert(table string, data any, opts ...BulkOption) error {
+	// Check for nil data
+	if data == nil {
+		return nil
+	}
+
 	config := &BulkConfig{
 		BatchSize:  1000,
 		OnConflict: ConflictError,
@@ -96,6 +101,11 @@ func (b *bulkBuilder) BulkInsert(table string, data any, opts ...BulkOption) err
 			continue
 		}
 
+		// Check for nil map in first row
+		if batch[0] == nil {
+			continue
+		}
+
 		var columns []string
 		for col := range batch[0] {
 			columns = append(columns, col)
@@ -104,6 +114,11 @@ func (b *bulkBuilder) BulkInsert(table string, data any, opts ...BulkOption) err
 		// Prepare values
 		var values []any
 		for _, row := range batch {
+			// Check for nil row
+			if row == nil {
+				continue
+			}
+
 			for _, col := range columns {
 				values = append(values, row[col])
 			}
@@ -132,6 +147,11 @@ func (b *bulkBuilder) BulkInsert(table string, data any, opts ...BulkOption) err
 }
 
 func (b *bulkBuilder) BulkUpdate(table string, data any, opts ...BulkOption) error {
+	// Check for nil data
+	if data == nil {
+		return nil
+	}
+
 	config := &BulkConfig{
 		BatchSize: 1000,
 	}
@@ -155,6 +175,11 @@ func (b *bulkBuilder) BulkUpdate(table string, data any, opts ...BulkOption) err
 
 		// Process each row in the batch
 		for _, row := range batch {
+			// Check for nil row
+			if row == nil {
+				continue
+			}
+
 			// Separate columns and values
 			var columns []string
 			var values []any
@@ -179,7 +204,8 @@ func (b *bulkBuilder) BulkUpdate(table string, data any, opts ...BulkOption) err
 }
 
 func (b *bulkBuilder) BulkDelete(table string, conditions []map[string]any) error {
-	if len(conditions) == 0 {
+	// Check for nil conditions
+	if conditions == nil || len(conditions) == 0 {
 		return nil
 	}
 
@@ -192,6 +218,16 @@ func (b *bulkBuilder) BulkDelete(table string, conditions []map[string]any) erro
 }
 
 func (b *bulkBuilder) BulkUpsert(table string, data any, conflictColumns []string, opts ...BulkOption) error {
+	// Check for nil data
+	if data == nil {
+		return nil
+	}
+
+	// Check for nil conflictColumns
+	if conflictColumns == nil {
+		conflictColumns = []string{}
+	}
+
 	config := &BulkConfig{
 		BatchSize: 1000,
 	}
@@ -218,6 +254,11 @@ func (b *bulkBuilder) BulkUpsert(table string, data any, conflictColumns []strin
 			continue
 		}
 
+		// Check for nil map in first row
+		if batch[0] == nil {
+			continue
+		}
+
 		var columns []string
 		for col := range batch[0] {
 			columns = append(columns, col)
@@ -226,6 +267,11 @@ func (b *bulkBuilder) BulkUpsert(table string, data any, conflictColumns []strin
 		// Prepare values
 		var values []any
 		for _, row := range batch {
+			// Check for nil row
+			if row == nil {
+				continue
+			}
+
 			for _, col := range columns {
 				values = append(values, row[col])
 			}
@@ -246,6 +292,11 @@ func (b *bulkBuilder) BulkUpsert(table string, data any, conflictColumns []strin
 
 // Bulk Update by key
 func (b *bulkBuilder) BulkUpdateByKey(table string, data any, keyColumn string) error {
+	// Check for nil data
+	if data == nil {
+		return nil
+	}
+
 	// Convert data to slice of maps
 	rows, err := b.convertToMapSlice(data)
 	if err != nil {
@@ -253,6 +304,11 @@ func (b *bulkBuilder) BulkUpdateByKey(table string, data any, keyColumn string) 
 	}
 
 	if len(rows) == 0 {
+		return nil
+	}
+
+	// Check for nil map in first row
+	if rows[0] == nil {
 		return nil
 	}
 
@@ -267,6 +323,11 @@ func (b *bulkBuilder) BulkUpdateByKey(table string, data any, keyColumn string) 
 	// Prepare values
 	var values []any
 	for _, row := range rows {
+		// Check for nil row
+		if row == nil {
+			continue
+		}
+
 		// Add update values
 		for _, col := range columns {
 			values = append(values, row[col])
@@ -285,6 +346,11 @@ func (b *bulkBuilder) BulkUpdateByKey(table string, data any, keyColumn string) 
 
 // Process in batches
 func (b *bulkBuilder) ProcessInBatches(query SelectBuilder, batchSize int, processor func(batch any) error) error {
+	// Check for nil parameters
+	if query == nil || processor == nil {
+		return nil
+	}
+
 	offset := 0
 	for {
 		// Clone the query and add limit/offset
@@ -322,6 +388,11 @@ func (b *bulkBuilder) ProcessInBatches(query SelectBuilder, batchSize int, proce
 
 // CSV Import/Export
 func (b *bulkBuilder) ImportCSV(table string, csvPath string, mapping map[string]string) error {
+	// Check for empty csvPath
+	if csvPath == "" {
+		return fmt.Errorf("csvPath cannot be empty")
+	}
+
 	file, err := os.Open(csvPath)
 	if err != nil {
 		return err
@@ -371,6 +442,16 @@ func (b *bulkBuilder) ImportCSV(table string, csvPath string, mapping map[string
 }
 
 func (b *bulkBuilder) ExportCSV(query SelectBuilder, csvPath string) error {
+	// Check for nil query
+	if query == nil {
+		return fmt.Errorf("query cannot be nil")
+	}
+
+	// Check for empty csvPath
+	if csvPath == "" {
+		return fmt.Errorf("csvPath cannot be empty")
+	}
+
 	// Execute query
 	rows, err := query.Rows()
 	if err != nil {
@@ -391,6 +472,11 @@ func (b *bulkBuilder) ExportCSV(query SelectBuilder, csvPath string) error {
 		return nil
 	}
 
+	// Check for nil first row
+	if rows[0] == nil {
+		return nil
+	}
+
 	// Write headers
 	var headers []string
 	for col := range rows[0] {
@@ -402,6 +488,11 @@ func (b *bulkBuilder) ExportCSV(query SelectBuilder, csvPath string) error {
 
 	// Write data
 	for _, row := range rows {
+		// Check for nil row
+		if row == nil {
+			continue
+		}
+
 		var record []string
 		for _, header := range headers {
 			record = append(record, fmt.Sprintf("%v", row[header]))
@@ -510,23 +601,6 @@ func (b *bulkBuilder) generateBulkInsertSQL(table string, columns []string, rowC
 		b.dialect.QuoteIdentifier(table),
 		strings.Join(quotedColumns, ", "),
 		strings.Join(allPlaceholders, ", "))
-}
-
-func (b *bulkBuilder) generateBulkUpdateSQL(table string, columns []string, rowCount int) string {
-	quotedColumns := make([]string, len(columns))
-	for i, col := range columns {
-		quotedColumns[i] = b.dialect.QuoteIdentifier(col)
-	}
-
-	// Create SET clause with multiple assignments
-	var setParts []string
-	for _, col := range quotedColumns {
-		setParts = append(setParts, fmt.Sprintf("%s = %s", col, b.dialect.PlaceholderFormat()))
-	}
-
-	return fmt.Sprintf("UPDATE %s SET %s",
-		b.dialect.QuoteIdentifier(table),
-		strings.Join(setParts, ", "))
 }
 
 func (b *bulkBuilder) generateSingleUpdateSQL(table string, columns []string) string {

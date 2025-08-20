@@ -69,7 +69,7 @@ func TestInsertIgnore(t *testing.T) {
 	sql, args := result.ToSQL()
 
 	// В MySQL IGNORE добавляется как часть ключевого слова INSERT
-	expectedSQL := "INSERT INTO `users` (`name`, `email`) VALUES (?, ?)"
+	expectedSQL := "INSERT IGNORE `users` (`name`, `email`) VALUES (?, ?)"
 	expectedArgs := []any{"John", "john@example.com"}
 
 	assert.Equal(t, expectedSQL, sql)

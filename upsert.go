@@ -68,12 +68,21 @@ func NewUpsertBuilder(db SQLXExecutor, dialect dialect.Dialect, table string) Up
 }
 
 func (u *upsertBuilder) Values(data any) UpsertBuilder {
+	// Check for nil data
+	if data == nil {
+		return u
+	}
+
 	// Use reflection to extract fields and their values
 	v := reflect.ValueOf(data)
 	t := reflect.TypeOf(data)
 
 	// Handle pointers
 	if v.Kind() == reflect.Ptr {
+		// Check for nil pointer
+		if v.IsNil() {
+			return u
+		}
 		v = v.Elem()
 		t = t.Elem()
 	}

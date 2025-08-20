@@ -553,12 +553,8 @@ func (s *selectBuilder) buildSQL() (string, []any) {
 				if strings.HasPrefix(where, "AND ") || strings.HasPrefix(where, "OR ") || strings.HasPrefix(where, "(") {
 					whereParts = append(whereParts, where)
 				} else {
-					// Особая обработка для скобок - добавляем AND перед ними
-					if strings.HasPrefix(where, "(") {
-						whereParts = append(whereParts, "AND "+where)
-					} else {
-						whereParts = append(whereParts, "AND "+where)
-					}
+					// Добавляем AND перед условием
+					whereParts = append(whereParts, "AND "+where)
 				}
 			}
 		}
