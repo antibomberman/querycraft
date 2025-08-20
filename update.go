@@ -17,6 +17,7 @@ type UpdateBuilder interface {
 	SetRaw(expression string, args ...any) UpdateBuilder
 	SetMap(values map[string]any) UpdateBuilder
 	SetStruct(data any) UpdateBuilder
+	Columns(columns ...string) UpdateBuilder
 
 	// Инкремент/декремент
 	Increment(column string, value ...int) UpdateBuilder
@@ -58,6 +59,7 @@ type updateBuilder struct {
 	wheres    []string
 	whereArgs []any
 	limit     *int
+	columns   []string
 }
 
 func NewUpdateBuilder(db SQLXExecutor, dialect dialect.Dialect, table string) UpdateBuilder {
@@ -104,6 +106,15 @@ func (u *updateBuilder) SetStruct(data any) UpdateBuilder {
 		return u
 	}
 
+	// Create a map of column names for filtering if columns are specified
+	columnMap := make(map[string]bool)
+	useColumnFilter := len(u.columns) > 0
+	if useColumnFilter {
+		for _, col := range u.columns {
+			columnMap[col] = true
+		}
+	}
+
 	for i := 0; i < v.NumField(); i++ {
 		field := t.Field(i)
 		value := v.Field(i)
@@ -124,10 +135,20 @@ func (u *updateBuilder) SetStruct(data any) UpdateBuilder {
 			continue
 		}
 
+		// If columns are specified, only update those columns
+		if useColumnFilter && !columnMap[column] {
+			continue
+		}
+
 		// Set the value
 		u.Set(column, value.Interface())
 	}
 
+	return u
+}
+
+func (u *updateBuilder) Columns(columns ...string) UpdateBuilder {
+	u.columns = columns
 	return u
 }
 
@@ -275,11 +296,13 @@ func (u *updateBuilder) Clone() UpdateBuilder {
 		wheres:  make([]string, len(u.wheres)),
 		joins:   make([]string, len(u.joins)),
 		limit:   u.limit,
+		columns: make([]string, len(u.columns)),
 	}
 
 	copy(clone.sets, u.sets)
 	copy(clone.wheres, u.wheres)
 	copy(clone.joins, u.joins)
+	copy(clone.columns, u.columns)
 
 	// Copy args slices
 	clone.setArgs = make([]any, len(u.setArgs))

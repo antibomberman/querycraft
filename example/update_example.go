@@ -6,7 +6,6 @@ import (
 	"log"
 	"time"
 
-	"github.com/antibomberman/querycraft"
 	_ "github.com/go-sql-driver/mysql"
 )
 
@@ -17,25 +16,34 @@ func ExampleUpdate() {
 	QC.Schema().ClearTable("users")
 
 	// Create users table
-	QC.Schema().CreateTable("users", func(builder querycraft.TableBuilder) {
-		builder.ID()
-		builder.String("name", 100).Nullable()
-		builder.String("email", 255).NotNull().Unique()
-		builder.Integer("age").Default(0)
-		builder.Timestamp("created_at").NotNull()
-		builder.Timestamp("updated_at").NotNull()
-	})
+	//err = QC.Schema().CreateTable("users", func(builder querycraft.TableBuilder) {
+	//	builder.ID()
+	//	builder.String("name", 100).Nullable()
+	//	builder.String("email", 255).NotNull().Unique()
+	//	builder.Integer("age").Default(0)
+	//	builder.Timestamp("created_at").NotNull()
+	//	builder.Timestamp("updated_at").NotNull()
+	//})
+	//if err != nil {
+	//	log.Fatal("create user table ", err)
+	//}
 
 	// Insert sample data
-	QC.Insert("users").
+	_, err = QC.Insert("users").
 		Columns("name", "email", "age", "created_at", "updated_at").
 		Values("John Doe", "john@example.com", 30, time.Now(), time.Now()).
 		Exec()
+	if err != nil {
+		log.Fatal("insert user table ", err)
+	}
 
-	QC.Insert("users").
+	_, err = QC.Insert("users").
 		Columns("name", "email", "age", "created_at", "updated_at").
 		Values("Jane Smith", "jane@example.com", 25, time.Now(), time.Now()).
 		Exec()
+	if err != nil {
+		log.Fatal("insert user table ", err)
+	}
 
 	fmt.Println("=== Update Examples ===")
 
@@ -46,7 +54,7 @@ func ExampleUpdate() {
 		WhereEq("email", "john@example.com").
 		Exec()
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal("update 1 ", err)
 	}
 	rowsAffected, _ := result.RowsAffected()
 	fmt.Printf("Updated %d rows\n", rowsAffected)
@@ -57,11 +65,12 @@ func ExampleUpdate() {
 		Age:  26,
 	}
 	result, err = QC.Update("users").
+		Columns("name", "age").
 		SetStruct(user).
 		WhereEq("email", "jane@example.com").
 		Exec()
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal("update 2 ", err)
 	}
 	rowsAffected, _ = result.RowsAffected()
 	fmt.Printf("Updated %d rows using struct\n", rowsAffected)
@@ -75,7 +84,7 @@ func ExampleUpdate() {
 		Where("age", ">", 20).
 		Exec()
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal("update 3 ", err)
 	}
 	rowsAffected, _ = result.RowsAffected()
 	fmt.Printf("Updated %d rows using map\n", rowsAffected)
@@ -86,7 +95,7 @@ func ExampleUpdate() {
 		WhereEq("email", "john@example.com").
 		Exec()
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal("update 4 ", err)
 	}
 	rowsAffected, _ = result.RowsAffected()
 	fmt.Printf("Incremented age for %d rows\n", rowsAffected)
@@ -97,7 +106,7 @@ func ExampleUpdate() {
 		WhereEq("email", "jane@example.com").
 		Exec()
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal("update 5 ", err)
 	}
 	rowsAffected, _ = result.RowsAffected()
 	fmt.Printf("Decremented age for %d rows\n", rowsAffected)
