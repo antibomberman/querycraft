@@ -15,10 +15,6 @@ type DeleteBuilder interface {
 	WhereIn(column string, values ...any) DeleteBuilder
 	WhereRaw(condition string, args ...any) DeleteBuilder
 
-	// JOIN для DELETE
-	Join(table, condition string) DeleteBuilder
-	LeftJoin(table, condition string) DeleteBuilder
-
 	// Ограничения
 	Limit(limit int) DeleteBuilder
 	OrderBy(column string) DeleteBuilder
@@ -39,7 +35,6 @@ type deleteBuilder struct {
 	ctx     context.Context
 
 	table     string
-	joins     []string
 	wheres    []string
 	whereArgs []any
 	orders    []string
@@ -81,16 +76,6 @@ func (d *deleteBuilder) WhereRaw(condition string, args ...any) DeleteBuilder {
 	return d
 }
 
-func (d *deleteBuilder) Join(table, condition string) DeleteBuilder {
-	d.joins = append(d.joins, fmt.Sprintf("JOIN %s ON %s", table, condition))
-	return d
-}
-
-func (d *deleteBuilder) LeftJoin(table, condition string) DeleteBuilder {
-	d.joins = append(d.joins, fmt.Sprintf("LEFT JOIN %s ON %s", table, condition))
-	return d
-}
-
 func (d *deleteBuilder) Limit(limit int) DeleteBuilder {
 	d.limit = &limit
 	return d
@@ -107,11 +92,6 @@ func (d *deleteBuilder) buildSQL() (string, []any) {
 
 	// DELETE
 	queryParts = append(queryParts, "DELETE FROM", d.table)
-
-	// JOIN
-	if len(d.joins) > 0 {
-		queryParts = append(queryParts, strings.Join(d.joins, " "))
-	}
 
 	// WHERE
 	if len(d.wheres) > 0 {
@@ -163,13 +143,11 @@ func (d *deleteBuilder) Clone() DeleteBuilder {
 		ctx:     d.ctx,
 		table:   d.table,
 		wheres:  make([]string, len(d.wheres)),
-		joins:   make([]string, len(d.joins)),
 		orders:  make([]string, len(d.orders)),
 		limit:   d.limit,
 	}
 
 	copy(clone.wheres, d.wheres)
-	copy(clone.joins, d.joins)
 	copy(clone.orders, d.orders)
 
 	// Copy args slices

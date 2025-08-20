@@ -6,7 +6,6 @@ import (
 	"log"
 	"time"
 
-	"github.com/antibomberman/querycraft"
 	_ "github.com/go-sql-driver/mysql"
 )
 
@@ -14,16 +13,6 @@ func ExampleUpsert() {
 	var err error
 	// Clear existing data
 	QC.Schema().ClearTable("users")
-
-	// Create users table
-	QC.Schema().CreateTable("users", func(builder querycraft.TableBuilder) {
-		builder.ID()
-		builder.String("name", 100).Nullable()
-		builder.String("email", 255).NotNull().Unique()
-		builder.Integer("age").Default(0)
-		builder.Timestamp("created_at").NotNull()
-		builder.Timestamp("updated_at").NotNull()
-	})
 
 	// Insert sample data
 	QC.Insert("users").
