@@ -19,6 +19,7 @@ func ExampleSelect() {
 	QC.Schema().CreateTable("users", func(builder querycraft.TableBuilder) {
 		builder.ID()
 		builder.String("name", 100).Nullable()
+		builder.String("full_name", 100).Nullable()
 		builder.String("email", 255).NotNull().Unique()
 		builder.Integer("age").Default(0)
 		builder.Timestamp("created_at").NotNull()
@@ -58,7 +59,7 @@ func ExampleSelect() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	fmt.Printf("Selected user: %s (%s)\n", user.Name.String, user.Email)
+	//fmt.Printf("Selected user: %s (%s)\n", user.Name.String, user.Email)
 
 	// Example 3: Select with complex conditions
 	var users2 []User

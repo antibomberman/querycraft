@@ -50,8 +50,33 @@ type queryCraft struct {
 	logger     Logger
 }
 
-func NewWithLogger(driver string, db *sql.DB, logger Logger) (QueryCraft, error) {
-	sqlxDB := sqlx.NewDb(db, driver)
+// DefaultOptions returns the default options for QueryCraft
+func DefaultOptions() Options {
+	return Options{
+		LogEnabled:        false,
+		LogLevel:          LogLevelInfo,
+		LogFormat:         LogFormatText,
+		LogSaveToFile:     false,
+		LogPrintToConsole: false,
+		LogDir:            "./storage/logs/sql/",
+		LogAutoCleanDays:  7,
+	}
+}
+
+func New(driver string, db *sql.DB, opts ...Options) (QueryCraft, error) {
+	var options Options
+	if len(opts) > 0 {
+		options = opts[0]
+	} else {
+		options = DefaultOptions()
+	}
+
+	var logger Logger
+	if options.LogEnabled && options.LogSaveToFile {
+		logger = NewFileLogger(options)
+	}
+
+	sqlxDB := sqlx.NewDb(db, driver).Unsafe()
 
 	qc := &queryCraft{
 		db:     sqlxDB,
@@ -70,45 +95,6 @@ func NewWithLogger(driver string, db *sql.DB, logger Logger) (QueryCraft, error)
 	qc.migrations = NewMigrationManager(qc.db, qc.dialect)
 
 	return qc, nil
-}
-
-// DefaultOptions returns the default options for QueryCraft
-func DefaultOptions() Options {
-	return Options{
-		LogEnabled:        false,
-		LogLevel:          LogLevelInfo,
-		LogFormat:         LogFormatText,
-		LogSaveToFile:     true,
-		LogPrintToConsole: false,
-		LogDir:            "./storage/logs/sql/",
-		LogAutoCleanDays:  7,
-	}
-}
-
-func New(driver string, db *sql.DB, opts ...Options) (QueryCraft, error) {
-	var options Options
-	if len(opts) > 0 {
-		options = opts[0]
-	} else {
-		options = DefaultOptions()
-	}
-
-	// Create logger if logging is enabled
-	var logger Logger
-	if options.LogEnabled {
-		loggerOptions := LoggerOptions{
-			Enabled:        true,
-			Level:          options.LogLevel,
-			Format:         options.LogFormat,
-			SaveToFile:     options.LogSaveToFile,
-			PrintToConsole: options.LogPrintToConsole,
-			LogDir:         options.LogDir,
-			AutoCleanDays:  options.LogAutoCleanDays,
-		}
-		logger = NewFileLogger(loggerOptions)
-	}
-
-	return NewWithLogger(driver, db, logger)
 }
 
 func (qc *queryCraft) Select(columns ...string) SelectBuilder {

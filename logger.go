@@ -28,50 +28,26 @@ const (
 	LogFormatJSON
 )
 
-// LoggerOptions represents the options for the logger
-type LoggerOptions struct {
-	Enabled        bool
-	Level          LogLevel
-	Format         LogFormat
-	SaveToFile     bool
-	PrintToConsole bool
-	LogDir         string
-	AutoCleanDays  int
-}
-
-// DefaultLoggerOptions returns the default logger options
-func DefaultLoggerOptions() LoggerOptions {
-	return LoggerOptions{
-		Enabled:        false,
-		Level:          LogLevelInfo,
-		Format:         LogFormatText,
-		SaveToFile:     true,
-		PrintToConsole: false,
-		LogDir:         "./storage/logs/sql/",
-		AutoCleanDays:  7,
-	}
-}
-
 // FileLogger is a logger that writes to files
 type FileLogger struct {
-	options LoggerOptions
+	options Options
 }
 
 // NewFileLogger creates a new file logger
-func NewFileLogger(options LoggerOptions) *FileLogger {
+func NewFileLogger(options Options) *FileLogger {
 	logger := &FileLogger{
 		options: options,
 	}
 
 	// Create log directory if it doesn't exist
-	if options.Enabled {
+	if options.LogEnabled {
 		err := os.MkdirAll(options.LogDir, 0755)
 		if err != nil {
 			fmt.Printf("Error creating log directory: %v\n", err)
 		}
 
 		// Clean old log files
-		if options.AutoCleanDays > 0 {
+		if options.LogAutoCleanDays > 0 {
 			logger.cleanOldLogs()
 		}
 	}
@@ -81,7 +57,7 @@ func NewFileLogger(options LoggerOptions) *FileLogger {
 
 // LogQuery logs a query
 func (l *FileLogger) LogQuery(ctx context.Context, query string, args []any, duration time.Duration, err error) {
-	if !l.options.Enabled {
+	if !l.options.LogEnabled {
 		return
 	}
 
@@ -95,7 +71,7 @@ func (l *FileLogger) LogQuery(ctx context.Context, query string, args []any, dur
 	timestamp := time.Now()
 	var logEntry string
 
-	if l.options.Format == LogFormatJSON {
+	if l.options.LogFormat == LogFormatJSON {
 		// Create JSON log entry
 		logData := map[string]any{
 			"timestamp": timestamp.Format("2006-01-02 15:04:05"),
@@ -131,12 +107,12 @@ func (l *FileLogger) LogQuery(ctx context.Context, query string, args []any, dur
 	}
 
 	// Print to console if PrintToConsole is enabled
-	if l.options.PrintToConsole {
+	if l.options.LogPrintToConsole {
 		fmt.Print(logEntry)
 	}
 
 	// Write to file if SaveToFile is enabled
-	if l.options.SaveToFile && l.options.LogDir != "" {
+	if l.options.LogSaveToFile && l.options.LogDir != "" {
 		filename := filepath.Join(l.options.LogDir, timestamp.Format("2006_01_02")+".log")
 		file, err := os.OpenFile(filename, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
 		if err != nil {
@@ -161,7 +137,7 @@ func (l *FileLogger) cleanOldLogs() {
 	}
 
 	// Calculate the cutoff time
-	cutoff := time.Now().AddDate(0, 0, -l.options.AutoCleanDays)
+	cutoff := time.Now().AddDate(0, 0, -l.options.LogAutoCleanDays)
 
 	// Remove old files
 	for _, file := range files {
