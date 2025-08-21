@@ -18,7 +18,7 @@ QueryCraft is a powerful and flexible Go library for building and executing SQL 
 ## Installation
 
 ```bash
-go get github.com/antibomberman/querycraft
+go get github.com/antibomberman/querycraft@0.0.0
 ```
 
 ## Quick Start
