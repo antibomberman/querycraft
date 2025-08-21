@@ -100,13 +100,13 @@ type SelectBuilder interface {
 
 // PaginationResult represents the result of pagination
 type PaginationResult struct {
-	Data       []map[string]any `json:"data"`
-	Total      int64            `json:"total"`
-	PerPage    int              `json:"per_page"`
-	CurrentPage int             `json:"current_page"`
-	LastPage   int              `json:"last_page"`
-	From       int              `json:"from"`
-	To         int              `json:"to"`
+	Data        []map[string]any `json:"data"`
+	Total       int64            `json:"total"`
+	PerPage     int              `json:"per_page"`
+	CurrentPage int              `json:"current_page"`
+	LastPage    int              `json:"last_page"`
+	From        int              `json:"from"`
+	To          int              `json:"to"`
 }
 
 // KeysetPaginationResult represents the result of keyset pagination
@@ -506,25 +506,25 @@ func (s *selectBuilder) Page(page, perPage int) SelectBuilder {
 func (s *selectBuilder) Paginate(page, perPage int) (*PaginationResult, error) {
 	// Calculate offset
 	offset := (page - 1) * perPage
-	
+
 	// Get total count
 	count, err := s.Clone().Count()
 	if err != nil {
 		return nil, err
 	}
-	
+
 	// Calculate last page
 	lastPage := int((count + int64(perPage) - 1) / int64(perPage))
-	
+
 	// Apply limit and offset
 	s.Limit(perPage).Offset(offset)
-	
+
 	// Get data
 	data, err := s.Rows()
 	if err != nil {
 		return nil, err
 	}
-	
+
 	// Calculate from and to
 	from := 0
 	to := 0
@@ -532,7 +532,7 @@ func (s *selectBuilder) Paginate(page, perPage int) (*PaginationResult, error) {
 		from = offset + 1
 		to = offset + len(data)
 	}
-	
+
 	return &PaginationResult{
 		Data:        data,
 		Total:       count,
@@ -549,7 +549,7 @@ func (s *selectBuilder) KeysetPaginate(column string, lastValue any, perPage int
 	if direction != "asc" && direction != "desc" {
 		direction = "asc"
 	}
-	
+
 	// Add keyset condition
 	if lastValue != nil {
 		if direction == "asc" {
@@ -558,23 +558,23 @@ func (s *selectBuilder) KeysetPaginate(column string, lastValue any, perPage int
 			s.Where(column, "<", lastValue)
 		}
 	}
-	
+
 	// Apply ordering
 	if direction == "asc" {
 		s.OrderBy(column)
 	} else {
 		s.OrderByDesc(column)
 	}
-	
+
 	// Apply limit
 	s.Limit(perPage + 1) // Get one extra record to check if there are more
-	
+
 	// Get data
 	data, err := s.Rows()
 	if err != nil {
 		return nil, err
 	}
-	
+
 	// Check if there are more records
 	hasMore := false
 	if len(data) > perPage {
@@ -582,7 +582,7 @@ func (s *selectBuilder) KeysetPaginate(column string, lastValue any, perPage int
 		// Remove the extra record
 		data = data[:perPage]
 	}
-	
+
 	// Get next and previous cursors
 	var nextCursor, prevCursor any
 	if len(data) > 0 {
@@ -591,12 +591,12 @@ func (s *selectBuilder) KeysetPaginate(column string, lastValue any, perPage int
 			lastRecord := data[len(data)-1]
 			nextCursor = lastRecord[column]
 		}
-		
+
 		// Previous cursor is the first record's column value
 		firstRecord := data[0]
 		prevCursor = firstRecord[column]
 	}
-	
+
 	return &KeysetPaginationResult{
 		Data:       data,
 		HasMore:    hasMore,
@@ -773,6 +773,22 @@ func (s *selectBuilder) setLogger(logger Logger) {
 	s.logger = logger
 }
 
+func formatArg(arg any) string {
+	switch v := arg.(type) {
+	case string:
+		return "'" + strings.Replace(v, "'", "''", -1) + "'"
+	case bool:
+		if v {
+			return "true"
+		}
+		return "false"
+	case nil:
+		return "NULL"
+	default:
+		return fmt.Sprintf("%v", v)
+	}
+}
+
 func (s *selectBuilder) Explain() ([]map[string]any, error) {
 	sql, args := s.buildSQL()
 	explainSQL := fmt.Sprintf("EXPLAIN %s", sql)
@@ -814,7 +830,7 @@ func (s *selectBuilder) One(dest any) error {
 			// Simple placeholder replacement for debugging
 			formattedSQL := sql
 			for _, arg := range args {
-				formattedSQL = strings.Replace(formattedSQL, s.dialect.PlaceholderFormat(), fmt.Sprintf("'%v'", arg), 1)
+				formattedSQL = strings.Replace(formattedSQL, s.dialect.PlaceholderFormat(), formatArg(arg), 1)
 			}
 			fmt.Println(formattedSQL)
 		}
@@ -856,7 +872,7 @@ func (s *selectBuilder) All(dest any) error {
 			// Simple placeholder replacement for debugging
 			formattedSQL := sql
 			for _, arg := range args {
-				formattedSQL = strings.Replace(formattedSQL, s.dialect.PlaceholderFormat(), fmt.Sprintf("'%v'", arg), 1)
+				formattedSQL = strings.Replace(formattedSQL, s.dialect.PlaceholderFormat(), formatArg(arg), 1)
 			}
 			fmt.Println(formattedSQL)
 		}
@@ -887,7 +903,7 @@ func (s *selectBuilder) Row() (map[string]any, error) {
 		// Simple placeholder replacement for debugging
 		formattedSQL := query
 		for _, arg := range args {
-			formattedSQL = strings.Replace(formattedSQL, s.dialect.PlaceholderFormat(), fmt.Sprintf("'%v'", arg), 1)
+			formattedSQL = strings.Replace(formattedSQL, s.dialect.PlaceholderFormat(), formatArg(arg), 1)
 		}
 		fmt.Println(formattedSQL)
 	}
@@ -946,7 +962,7 @@ func (s *selectBuilder) Rows() ([]map[string]any, error) {
 		// Simple placeholder replacement for debugging
 		formattedSQL := sql
 		for _, arg := range args {
-			formattedSQL = strings.Replace(formattedSQL, s.dialect.PlaceholderFormat(), fmt.Sprintf("'%v'", arg), 1)
+			formattedSQL = strings.Replace(formattedSQL, s.dialect.PlaceholderFormat(), formatArg(arg), 1)
 		}
 		fmt.Println(formattedSQL)
 	}
@@ -1192,7 +1208,7 @@ func (s *selectBuilder) Exists() (bool, error) {
 		// Simple placeholder replacement for debugging
 		formattedSQL := checkSQL
 		for _, arg := range args {
-			formattedSQL = strings.Replace(formattedSQL, s.dialect.PlaceholderFormat(), fmt.Sprintf("'%v'", arg), 1)
+			formattedSQL = strings.Replace(formattedSQL, s.dialect.PlaceholderFormat(), formatArg(arg), 1)
 		}
 		fmt.Println(formattedSQL)
 	}

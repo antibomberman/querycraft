@@ -3,6 +3,7 @@ package test_utils
 import (
 	"context"
 	"database/sql"
+	"fmt"
 
 	"github.com/jmoiron/sqlx"
 )
@@ -41,8 +42,8 @@ func (m *MockSQLXExecutor) QueryContext(ctx context.Context, query string, args 
 }
 
 func (m *MockSQLXExecutor) QueryxContext(ctx context.Context, query string, args ...any) (*sqlx.Rows, error) {
-	// Для простоты просто возвращаем nil
-	return nil, nil
+	// Для простоты просто возвращаем ошибку, чтобы избежать паники в тестах
+	return nil, fmt.Errorf("mock error")
 }
 
 func (m *MockSQLXExecutor) QueryRowxContext(ctx context.Context, query string, args ...any) *sqlx.Row {
