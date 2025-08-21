@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 	"reflect"
+	"regexp"
 	"strings"
 	"time"
 
@@ -234,13 +235,37 @@ func (u *updateBuilder) WhenFunc(condition bool, fn func(UpdateBuilder) UpdateBu
 	return u
 }
 
+func (u *updateBuilder) quoteTableNameWithAlias(tableName string) string {
+	re := regexp.MustCompile(`(?i)^(.+?)\s+(as\s+)?(.+?)$`)
+	matches := re.FindStringSubmatch(tableName)
+
+	if len(matches) == 4 {
+		table := strings.TrimSpace(matches[1])
+		alias := strings.TrimSpace(matches[3])
+		return fmt.Sprintf("%s as %s", u.dialect.QuoteIdentifier(table), alias)
+	}
+
+	return u.dialect.QuoteIdentifier(tableName)
+}
+
+func (u *updateBuilder) quoteJoinCondition(condition string) string {
+	re := regexp.MustCompile(`[a-zA-Z_][a-zA-Z0-9_]*(\.[a-zA-Z_][a-zA-Z0-9_]*)*`)
+	return re.ReplaceAllStringFunc(condition, func(identifier string) string {
+		upperIdentifier := strings.ToUpper(identifier)
+		if upperIdentifier == "AND" || upperIdentifier == "OR" || upperIdentifier == "ON" || upperIdentifier == "AS" {
+			return identifier
+		}
+		return u.dialect.QuoteIdentifier(identifier)
+	})
+}
+
 func (u *updateBuilder) Join(table, condition string) UpdateBuilder {
-	u.joins = append(u.joins, fmt.Sprintf("JOIN %s ON %s", table, condition))
+	u.joins = append(u.joins, fmt.Sprintf("JOIN %s ON %s", u.quoteTableNameWithAlias(table), u.quoteJoinCondition(condition)))
 	return u
 }
 
 func (u *updateBuilder) LeftJoin(table, condition string) UpdateBuilder {
-	u.joins = append(u.joins, fmt.Sprintf("LEFT JOIN %s ON %s", table, condition))
+	u.joins = append(u.joins, fmt.Sprintf("LEFT JOIN %s ON %s", u.quoteTableNameWithAlias(table), u.quoteJoinCondition(condition)))
 	return u
 }
 
@@ -249,7 +274,7 @@ func (u *updateBuilder) buildSQL() (string, []any) {
 	var args []any
 
 	// UPDATE
-	queryParts = append(queryParts, "UPDATE", u.table)
+	queryParts = append(queryParts, "UPDATE", u.dialect.QuoteIdentifier(u.table))
 
 	// JOIN
 	if len(u.joins) > 0 {
@@ -264,7 +289,22 @@ func (u *updateBuilder) buildSQL() (string, []any) {
 
 	// WHERE
 	if len(u.wheres) > 0 {
-		queryParts = append(queryParts, "WHERE", strings.Join(u.wheres, " "))
+		var whereParts []string
+		for i, where := range u.wheres {
+			if i == 0 {
+				whereParts = append(whereParts, where)
+			} else {
+				if strings.HasPrefix(where, "AND ") || strings.HasPrefix(where, "OR ") || strings.HasPrefix(where, "(") {
+					whereParts = append(whereParts, where)
+				} else {
+					whereParts = append(whereParts, "AND "+where)
+				}
+			}
+		}
+		whereClause := strings.Join(whereParts, " ")
+		whereClause = strings.TrimPrefix(whereClause, "AND ")
+		whereClause = strings.TrimPrefix(whereClause, "OR ")
+		queryParts = append(queryParts, "WHERE", whereClause)
 		args = append(args, u.whereArgs...)
 	}
 

@@ -16,7 +16,7 @@ func TestUpdateSet(t *testing.T) {
 	result := builder.Set("name", "John").Set("email", "john@example.com").Where("id", "=", 1)
 	sql, args := result.ToSQL()
 
-	expectedSQL := "UPDATE users SET `name` = ?, `email` = ? WHERE `id` = ?"
+	expectedSQL := "UPDATE `users` SET `name` = ?, `email` = ? WHERE `id` = ?"
 	expectedArgs := []any{"John", "john@example.com", 1}
 
 	assert.Equal(t, expectedSQL, sql)
@@ -36,7 +36,7 @@ func TestUpdateSetMap(t *testing.T) {
 	sql, args := result.ToSQL()
 
 	// Для map порядок столбцов может быть разным, поэтому проверяем только структуру запроса
-	assert.Contains(t, sql, "UPDATE users SET")
+	assert.Contains(t, sql, "UPDATE `users` SET")
 	assert.Contains(t, sql, "`name` = ?")
 	assert.Contains(t, sql, "`email` = ?")
 	assert.Contains(t, sql, "WHERE `id` = ?")
@@ -53,7 +53,7 @@ func TestUpdateSetRaw(t *testing.T) {
 	result := builder.SetRaw("`updated_at` = NOW()").Where("id", "=", 1)
 	sql, args := result.ToSQL()
 
-	expectedSQL := "UPDATE users SET `updated_at` = NOW() WHERE `id` = ?"
+	expectedSQL := "UPDATE `users` SET `updated_at` = NOW() WHERE `id` = ?"
 	expectedArgs := []any{1}
 
 	assert.Equal(t, expectedSQL, sql)
@@ -67,7 +67,7 @@ func TestUpdateIncrement(t *testing.T) {
 	result := builder.Increment("login_count", 1).Where("id", "=", 1)
 	sql, args := result.ToSQL()
 
-	expectedSQL := "UPDATE users SET `login_count` = `login_count` + ? WHERE `id` = ?"
+	expectedSQL := "UPDATE `users` SET `login_count` = `login_count` + ? WHERE `id` = ?"
 	expectedArgs := []any{1, 1}
 
 	assert.Equal(t, expectedSQL, sql)
@@ -81,7 +81,7 @@ func TestUpdateDecrement(t *testing.T) {
 	result := builder.Decrement("balance", 100).Where("id", "=", 1)
 	sql, args := result.ToSQL()
 
-	expectedSQL := "UPDATE users SET `balance` = `balance` - ? WHERE `id` = ?"
+	expectedSQL := "UPDATE `users` SET `balance` = `balance` - ? WHERE `id` = ?"
 	expectedArgs := []any{100, 1}
 
 	assert.Equal(t, expectedSQL, sql)
@@ -95,7 +95,7 @@ func TestUpdateWhereIn(t *testing.T) {
 	result := builder.Set("status", "inactive").WhereIn("id", 1, 2, 3)
 	sql, args := result.ToSQL()
 
-	expectedSQL := "UPDATE users SET `status` = ? WHERE `id` IN (?, ?, ?)"
+	expectedSQL := "UPDATE `users` SET `status` = ? WHERE `id` IN (?, ?, ?)"
 	expectedArgs := []any{"inactive", 1, 2, 3}
 
 	assert.Equal(t, expectedSQL, sql)
@@ -106,12 +106,12 @@ func TestUpdateJoin(t *testing.T) {
 	mockDB := &test_utils.MockSQLXExecutor{}
 	builder := querycraft.NewUpdateBuilder(mockDB, &dialect.MySQLDialect{}, "users")
 
-	result := builder.Join("orders", "`users`.`id` = `orders`.`user_id`").
+	result := builder.Join("orders", "users.id = orders.user_id").
 		Set("users.status", "premium").
 		Where("orders.total", ">", 1000)
 	sql, args := result.ToSQL()
 
-	expectedSQL := "UPDATE users JOIN orders ON `users`.`id` = `orders`.`user_id` SET `users.status` = ? WHERE `orders.total` > ?"
+	expectedSQL := "UPDATE `users` JOIN `orders` ON `users`.`id` = `orders`.`user_id` SET `users`.`status` = ? WHERE `orders`.`total` > ?"
 	expectedArgs := []any{"premium", 1000}
 
 	assert.Equal(t, expectedSQL, sql)

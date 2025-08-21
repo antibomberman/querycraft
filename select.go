@@ -417,22 +417,34 @@ func (s *selectBuilder) WhenFunc(condition bool, fn func(SelectBuilder) SelectBu
 	return s
 }
 
+func (s *selectBuilder) quoteJoinCondition(condition string) string {
+	re := regexp.MustCompile(`[a-zA-Z_][a-zA-Z0-9_]*(\.[a-zA-Z_][a-zA-Z0-9_]*)*`)
+	return re.ReplaceAllStringFunc(condition, func(identifier string) string {
+		// check for common SQL keywords that should not be quoted
+		upperIdentifier := strings.ToUpper(identifier)
+		if upperIdentifier == "AND" || upperIdentifier == "OR" || upperIdentifier == "ON" || upperIdentifier == "AS" {
+			return identifier
+		}
+		return s.dialect.QuoteIdentifier(identifier)
+	})
+}
+
 func (s *selectBuilder) Join(table, condition string) SelectBuilder {
 	return s.InnerJoin(table, condition)
 }
 
 func (s *selectBuilder) InnerJoin(table, condition string) SelectBuilder {
-	s.joins = append(s.joins, fmt.Sprintf("INNER JOIN %s ON %s", s.quoteTableNameWithAlias(table), condition))
+	s.joins = append(s.joins, fmt.Sprintf("INNER JOIN %s ON %s", s.quoteTableNameWithAlias(table), s.quoteJoinCondition(condition)))
 	return s
 }
 
 func (s *selectBuilder) LeftJoin(table, condition string) SelectBuilder {
-	s.joins = append(s.joins, fmt.Sprintf("LEFT JOIN %s ON %s", s.quoteTableNameWithAlias(table), condition))
+	s.joins = append(s.joins, fmt.Sprintf("LEFT JOIN %s ON %s", s.quoteTableNameWithAlias(table), s.quoteJoinCondition(condition)))
 	return s
 }
 
 func (s *selectBuilder) RightJoin(table, condition string) SelectBuilder {
-	s.joins = append(s.joins, fmt.Sprintf("RIGHT JOIN %s ON %s", s.quoteTableNameWithAlias(table), condition))
+	s.joins = append(s.joins, fmt.Sprintf("RIGHT JOIN %s ON %s", s.quoteTableNameWithAlias(table), s.quoteJoinCondition(condition)))
 	return s
 }
 
@@ -442,7 +454,7 @@ func (s *selectBuilder) CrossJoin(table string) SelectBuilder {
 }
 
 func (s *selectBuilder) OuterJoin(table, condition string) SelectBuilder {
-	s.joins = append(s.joins, fmt.Sprintf("OUTER JOIN %s ON %s", s.quoteTableNameWithAlias(table), condition))
+	s.joins = append(s.joins, fmt.Sprintf("OUTER JOIN %s ON %s", s.quoteTableNameWithAlias(table), s.quoteJoinCondition(condition)))
 	return s
 }
 
@@ -462,7 +474,11 @@ func (s *selectBuilder) OrderByRaw(expression string) SelectBuilder {
 }
 
 func (s *selectBuilder) GroupBy(columns ...string) SelectBuilder {
-	s.groups = append(s.groups, columns...)
+	quotedColumns := make([]string, len(columns))
+	for i, col := range columns {
+		quotedColumns[i] = s.dialect.QuoteIdentifier(col)
+	}
+	s.groups = append(s.groups, quotedColumns...)
 	return s
 }
 
@@ -654,7 +670,11 @@ func (s *selectBuilder) buildSQL() (string, []any) {
 	if len(s.columns) == 0 {
 		queryParts = append(queryParts, "SELECT *")
 	} else {
-		queryParts = append(queryParts, fmt.Sprintf("SELECT %s", strings.Join(s.columns, ", ")))
+		quotedColumns := make([]string, len(s.columns))
+		for i, col := range s.columns {
+			quotedColumns[i] = s.dialect.QuoteIdentifier(col)
+		}
+		queryParts = append(queryParts, fmt.Sprintf("SELECT %s", strings.Join(quotedColumns, ", ")))
 	}
 
 	// FROM

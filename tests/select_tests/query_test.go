@@ -16,14 +16,14 @@ func TestSelectOrderFromUserWithJoin(t *testing.T) {
 	//	From("user as u").
 	//	Join("order", "order.user_id = u.id").
 	//	Limit(500)
-	builder := NewSelectBuilder(mockDB, &dialect.MySQLDialect{}, "order.*")
-	result := builder.From("user as u").
+	builder := NewSelectBuilder(mockDB, &dialect.MySQLDialect{}, "order.*").
+		From("user as u").
 		Join("order", "order.user_id = u.id").
 		Limit(500)
 
-	sql, args := result.ToSQL()
+	sql, args := builder.ToSQL()
 
-	expectedSQL := "SELECT order.* FROM `user` as u INNER JOIN `order` ON order.user_id = u.id LIMIT 500"
+	expectedSQL := "SELECT `order`.* FROM `user` as u INNER JOIN `order` ON `order`.`user_id` = `u`.`id` LIMIT 500"
 	var expectedArgs []any
 
 	assert.Equal(t, expectedSQL, sql)
@@ -40,7 +40,7 @@ func TestSelectOrderLimitWhere(t *testing.T) {
 
 	sql, args := result.ToSQL()
 
-	expectedSQL := "SELECT order.limit as _lim WHERE `_lim` <> ?"
+	expectedSQL := "SELECT `order`.`limit` AS `_lim` WHERE `_lim` <> ?"
 	expectedArgs := []any{"0"}
 
 	assert.Equal(t, expectedSQL, sql)

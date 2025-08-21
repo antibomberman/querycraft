@@ -46,7 +46,7 @@ func TestSelectWithColumnAliases(t *testing.T) {
 	result := builder.From("order")
 	sql, args := result.ToSQL()
 
-	expectedSQL := "SELECT id as order_id, product_name as product, quantity as qty FROM `order`"
+	expectedSQL := "SELECT `id` AS `order_id`, `product_name` AS `product`, `quantity` AS `qty` FROM `order`"
 	var expectedArgs []any
 
 	assert.Equal(t, expectedSQL, sql)
@@ -60,7 +60,7 @@ func TestSelectWithReservedColumnNames(t *testing.T) {
 	result := builder.From("order")
 	sql, args := result.ToSQL()
 
-	expectedSQL := "SELECT `order` as order_number, `group` as group_name FROM `order`"
+	expectedSQL := "SELECT `order` AS `order_number`, `group` AS `group_name` FROM `order`"
 	var expectedArgs []any
 
 	assert.Equal(t, expectedSQL, sql)
@@ -73,7 +73,7 @@ func TestJoinWithReservedTableNames(t *testing.T) {
 
 	// Тест JOIN с зарезервированными именами таблиц
 	result := builder.From("order as o").
-		Join("user as u", "`o`.`user_id` = `u`.`id`").
+		Join("user as u", "o.user_id = u.id").
 		Where("status", "=", "completed")
 
 	sql, args := result.ToSQL()
@@ -88,23 +88,23 @@ func TestJoinWithReservedTableNames(t *testing.T) {
 func TestComplexQueryWithAliases(t *testing.T) {
 	mockDB := &test_utils.MockSQLXExecutor{}
 	builder := NewSelectBuilder(mockDB, &dialect.MySQLDialect{},
-		"`o`.`id` as order_id",
-		"`u`.`name` as customer_name",
-		"`o`.`total` as order_total",
-		"COUNT(`oi`.`id`) as item_count")
+		"o.id as order_id",
+		"u.name as customer_name",
+		"o.total as order_total",
+		"COUNT(oi.id) as item_count")
 
 	result := builder.From("order as o").
-		Join("user as u", "`o`.`user_id` = `u`.`id`").
-		LeftJoin("order_item as oi", "`o`.`id` = `oi`.`order_id`").
+		Join("user as u", "o.user_id = u.id").
+		LeftJoin("order_item as oi", "o.id = oi.order_id").
 		Where("created_at", ">=", "2023-01-01").
-		GroupBy("`o`.`id`", "`u`.`name`", "`o`.`total`").
+		GroupBy("o.id", "u.name", "o.total").
 		OrderByDesc("created_at").
 		Limit(10)
 
 	sql, args := result.ToSQL()
 
 	// Проверяем, что SQL содержит все необходимые части
-	assert.Contains(t, sql, "SELECT `o`.`id` as order_id, `u`.`name` as customer_name, `o`.`total` as order_total, COUNT(`oi`.`id`) as item_count")
+	assert.Contains(t, sql, "SELECT `o`.`id` AS `order_id`, `u`.`name` AS `customer_name`, `o`.`total` AS `order_total`, COUNT(oi.id) as item_count")
 	assert.Contains(t, sql, "FROM `order` as o")
 	assert.Contains(t, sql, "INNER JOIN `user` as u")
 	assert.Contains(t, sql, "LEFT JOIN `order_item` as oi")

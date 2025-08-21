@@ -2,6 +2,8 @@ package dialect
 
 import (
 	"fmt"
+	"regexp"
+	"strconv"
 	"strings"
 )
 
@@ -110,7 +112,38 @@ func (d *MySQLDialect) BulkDelete(table string, conditions []map[string]any) (st
 }
 
 func (d *MySQLDialect) QuoteIdentifier(name string) string {
-	return fmt.Sprintf("`%s`", strings.ReplaceAll(name, "`", "``"))
+	name = strings.TrimSpace(name)
+	if name == "" {
+		return ""
+	}
+
+	// Don't quote if it's a function call, asterisk, or already quoted
+	if name == "*" || strings.Contains(name, "(") || strings.Contains(name, ")") || (strings.HasPrefix(name, "`") && strings.HasSuffix(name, "`")) {
+		return name
+	}
+
+	// a regex to find ' as ' case-insensitively
+	re := regexp.MustCompile(`(?i)\s+as\s+`)
+	if re.MatchString(name) {
+		parts := re.Split(name, 2)
+		return d.QuoteIdentifier(parts[0]) + " AS " + d.QuoteIdentifier(parts[1])
+	}
+
+	if strings.Contains(name, ".") {
+		parts := strings.Split(name, ".")
+		quotedParts := make([]string, len(parts))
+		for i, part := range parts {
+			quotedParts[i] = d.QuoteIdentifier(part)
+		}
+		return strings.Join(quotedParts, ".")
+	}
+
+	// Don't quote if it's a number
+	if _, err := strconv.Atoi(name); err == nil {
+		return name
+	}
+
+	return "`" + name + "`"
 }
 
 func (d *MySQLDialect) TruncateTableSQL(table string) string {

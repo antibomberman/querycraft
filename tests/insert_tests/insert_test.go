@@ -88,7 +88,7 @@ func TestInsertFromSelect(t *testing.T) {
 	result := builder.Columns("name", "email").FromSelect(selectBuilder)
 	sql, args := result.ToSQL()
 
-	expectedSQL := "INSERT INTO `users` (`name`, `email`) SELECT name, email FROM `temp_users` WHERE `active` = ?"
+	expectedSQL := "INSERT INTO `users` (`name`, `email`) SELECT `name`, `email` FROM `temp_users` WHERE `active` = ?"
 	expectedArgs := []any{true}
 
 	assert.Equal(t, expectedSQL, sql)

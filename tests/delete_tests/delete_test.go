@@ -16,7 +16,7 @@ func TestDeleteWhere(t *testing.T) {
 	result := builder.Where("id", "=", 1)
 	sql, args := result.ToSQL()
 
-	expectedSQL := "DELETE FROM users WHERE `id` = ?"
+	expectedSQL := "DELETE FROM `users` WHERE `id` = ?"
 	expectedArgs := []any{1}
 
 	assert.Equal(t, expectedSQL, sql)
@@ -30,7 +30,7 @@ func TestDeleteWhereEq(t *testing.T) {
 	result := builder.WhereEq("id", 1)
 	sql, args := result.ToSQL()
 
-	expectedSQL := "DELETE FROM users WHERE `id` = ?"
+	expectedSQL := "DELETE FROM `users` WHERE `id` = ?"
 	expectedArgs := []any{1}
 
 	assert.Equal(t, expectedSQL, sql)
@@ -44,7 +44,7 @@ func TestDeleteWhereIn(t *testing.T) {
 	result := builder.WhereIn("id", 1, 2, 3)
 	sql, args := result.ToSQL()
 
-	expectedSQL := "DELETE FROM users WHERE `id` IN (?, ?, ?)"
+	expectedSQL := "DELETE FROM `users` WHERE `id` IN (?, ?, ?)"
 	expectedArgs := []any{1, 2, 3}
 
 	assert.Equal(t, expectedSQL, sql)
@@ -58,7 +58,7 @@ func TestDeleteWhereRaw(t *testing.T) {
 	result := builder.WhereRaw("`created_at` < NOW() - INTERVAL 30 DAY")
 	sql, args := result.ToSQL()
 
-	expectedSQL := "DELETE FROM users WHERE `created_at` < NOW() - INTERVAL 30 DAY"
+	expectedSQL := "DELETE FROM `users` WHERE `created_at` < NOW() - INTERVAL 30 DAY"
 	var expectedArgs []any
 
 	assert.Equal(t, expectedSQL, sql)
@@ -69,10 +69,10 @@ func TestDeleteJoin(t *testing.T) {
 	mockDB := &test_utils.MockSQLXExecutor{}
 	builder := querycraft.NewDeleteBuilder(mockDB, &dialect.MySQLDialect{}, "users")
 
-	result := builder.Join("orders", "`users`.`id` = `orders`.`user_id`").Where("orders.status", "=", "cancelled")
+	result := builder.Join("orders", "users.id = orders.user_id").Where("orders.status", "=", "cancelled")
 	sql, args := result.ToSQL()
 
-	expectedSQL := "DELETE FROM users JOIN orders ON `users`.`id` = `orders`.`user_id` WHERE `orders.status` = ?"
+	expectedSQL := "DELETE FROM `users` JOIN `orders` ON `users`.`id` = `orders`.`user_id` WHERE `orders`.`status` = ?"
 	expectedArgs := []any{"cancelled"}
 
 	assert.Equal(t, expectedSQL, sql)
@@ -86,7 +86,7 @@ func TestDeleteWithLimit(t *testing.T) {
 	result := builder.Where("active", "=", false).Limit(10)
 	sql, args := result.ToSQL()
 
-	expectedSQL := "DELETE FROM users WHERE `active` = ? LIMIT 10"
+	expectedSQL := "DELETE FROM `users` WHERE `active` = ? LIMIT 10"
 	expectedArgs := []any{false}
 
 	assert.Equal(t, expectedSQL, sql)
@@ -101,7 +101,7 @@ func TestDeleteWithOrderBy(t *testing.T) {
 	sql, args := result.ToSQL()
 
 	// Проверяем, что SQL содержит необходимые части
-	assert.Contains(t, sql, "DELETE FROM users")
+	assert.Contains(t, sql, "DELETE FROM `users`")
 	assert.Contains(t, sql, "WHERE `active` = ?")
 	assert.Contains(t, sql, "ORDER BY `created_at`")
 	assert.Len(t, args, 1)

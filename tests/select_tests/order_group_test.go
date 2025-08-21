@@ -58,7 +58,7 @@ func TestGroupBy(t *testing.T) {
 	result := builder.From("products").GroupBy("category")
 	sql, args := result.ToSQL()
 
-	expectedSQL := "SELECT category, COUNT(*) as count FROM `products` GROUP BY category"
+	expectedSQL := "SELECT `category`, COUNT(*) as count FROM `products` GROUP BY `category`"
 	var expectedArgs []any
 
 	assert.Equal(t, expectedSQL, sql)
@@ -72,7 +72,7 @@ func TestHaving(t *testing.T) {
 	result := builder.From("products").GroupBy("category").Having("COUNT(*) > ?", 5)
 	sql, args := result.ToSQL()
 
-	expectedSQL := "SELECT category, COUNT(*) as count FROM `products` GROUP BY category HAVING COUNT(*) > ?"
+	expectedSQL := "SELECT `category`, COUNT(*) as count FROM `products` GROUP BY `category` HAVING COUNT(*) > ?"
 	expectedArgs := []any{5}
 
 	assert.Equal(t, expectedSQL, sql)

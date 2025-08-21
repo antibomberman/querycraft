@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"regexp"
 	"strings"
 	"time"
 
@@ -86,8 +87,32 @@ func (d *deleteBuilder) WhereRaw(condition string, args ...any) DeleteBuilder {
 	return d
 }
 
+func (d *deleteBuilder) quoteTableNameWithAlias(tableName string) string {
+	re := regexp.MustCompile(`(?i)^(.+?)\s+(as\s+)?(.+?)$`)
+	matches := re.FindStringSubmatch(tableName)
+
+	if len(matches) == 4 {
+		table := strings.TrimSpace(matches[1])
+		alias := strings.TrimSpace(matches[3])
+		return fmt.Sprintf("%s as %s", d.dialect.QuoteIdentifier(table), alias)
+	}
+
+	return d.dialect.QuoteIdentifier(tableName)
+}
+
+func (d *deleteBuilder) quoteJoinCondition(condition string) string {
+	re := regexp.MustCompile(`[a-zA-Z_][a-zA-Z0-9_]*(\.[a-zA-Z_][a-zA-Z0-9_]*)*`)
+	return re.ReplaceAllStringFunc(condition, func(identifier string) string {
+		upperIdentifier := strings.ToUpper(identifier)
+		if upperIdentifier == "AND" || upperIdentifier == "OR" || upperIdentifier == "ON" || upperIdentifier == "AS" {
+			return identifier
+		}
+		return d.dialect.QuoteIdentifier(identifier)
+	})
+}
+
 func (d *deleteBuilder) Join(table, condition string) DeleteBuilder {
-	d.joins = append(d.joins, fmt.Sprintf("JOIN %s ON %s", table, condition))
+	d.joins = append(d.joins, fmt.Sprintf("JOIN %s ON %s", d.quoteTableNameWithAlias(table), d.quoteJoinCondition(condition)))
 	return d
 }
 
@@ -106,7 +131,7 @@ func (d *deleteBuilder) buildSQL() (string, []any) {
 	var args []any
 
 	// DELETE
-	queryParts = append(queryParts, "DELETE FROM", d.table)
+	queryParts = append(queryParts, "DELETE FROM", d.dialect.QuoteIdentifier(d.table))
 
 	// JOIN
 	if len(d.joins) > 0 {
@@ -115,7 +140,22 @@ func (d *deleteBuilder) buildSQL() (string, []any) {
 
 	// WHERE
 	if len(d.wheres) > 0 {
-		queryParts = append(queryParts, "WHERE", strings.Join(d.wheres, " "))
+		var whereParts []string
+		for i, where := range d.wheres {
+			if i == 0 {
+				whereParts = append(whereParts, where)
+			} else {
+				if strings.HasPrefix(where, "AND ") || strings.HasPrefix(where, "OR ") || strings.HasPrefix(where, "(") {
+					whereParts = append(whereParts, where)
+				} else {
+					whereParts = append(whereParts, "AND "+where)
+				}
+			}
+		}
+		whereClause := strings.Join(whereParts, " ")
+		whereClause = strings.TrimPrefix(whereClause, "AND ")
+		whereClause = strings.TrimPrefix(whereClause, "OR ")
+		queryParts = append(queryParts, "WHERE", whereClause)
 		args = append(args, d.whereArgs...)
 	}
 

@@ -14,7 +14,7 @@ func TestJoin(t *testing.T) {
 	builder := querycraft.NewSelectBuilder(mockDB, &dialect.MySQLDialect{}, "*")
 
 	// Тест Join (INNER JOIN)
-	result := builder.From("users").Join("orders", "`users`.`id` = `orders`.`user_id`")
+	result := builder.From("users").Join("orders", "users.id = orders.user_id")
 	sql, args := result.ToSQL()
 
 	expectedSQL := "SELECT * FROM `users` INNER JOIN `orders` ON `users`.`id` = `orders`.`user_id`"
@@ -28,7 +28,7 @@ func TestInnerJoin(t *testing.T) {
 	mockDB := &test_utils.MockSQLXExecutor{}
 	builder := querycraft.NewSelectBuilder(mockDB, &dialect.MySQLDialect{}, "*")
 
-	result := builder.From("users").InnerJoin("orders", "`users`.`id` = `orders`.`user_id`")
+	result := builder.From("users").InnerJoin("orders", "users.id = orders.user_id")
 	sql, args := result.ToSQL()
 
 	expectedSQL := "SELECT * FROM `users` INNER JOIN `orders` ON `users`.`id` = `orders`.`user_id`"
@@ -42,7 +42,7 @@ func TestLeftJoin(t *testing.T) {
 	mockDB := &test_utils.MockSQLXExecutor{}
 	builder := querycraft.NewSelectBuilder(mockDB, &dialect.MySQLDialect{}, "*")
 
-	result := builder.From("users").LeftJoin("orders", "`users`.`id` = `orders`.`user_id`")
+	result := builder.From("users").LeftJoin("orders", "users.id = orders.user_id")
 	sql, args := result.ToSQL()
 
 	expectedSQL := "SELECT * FROM `users` LEFT JOIN `orders` ON `users`.`id` = `orders`.`user_id`"
@@ -56,7 +56,7 @@ func TestRightJoin(t *testing.T) {
 	mockDB := &test_utils.MockSQLXExecutor{}
 	builder := querycraft.NewSelectBuilder(mockDB, &dialect.MySQLDialect{}, "*")
 
-	result := builder.From("users").RightJoin("orders", "`users`.`id` = `orders`.`user_id`")
+	result := builder.From("users").RightJoin("orders", "users.id = orders.user_id")
 	sql, args := result.ToSQL()
 
 	expectedSQL := "SELECT * FROM `users` RIGHT JOIN `orders` ON `users`.`id` = `orders`.`user_id`"
@@ -84,7 +84,7 @@ func TestOuterJoin(t *testing.T) {
 	mockDB := &test_utils.MockSQLXExecutor{}
 	builder := querycraft.NewSelectBuilder(mockDB, &dialect.MySQLDialect{}, "*")
 
-	result := builder.From("users").OuterJoin("orders", "`users`.`id` = `orders`.`user_id`")
+	result := builder.From("users").OuterJoin("orders", "users.id = orders.user_id")
 	sql, args := result.ToSQL()
 
 	expectedSQL := "SELECT * FROM `users` OUTER JOIN `orders` ON `users`.`id` = `orders`.`user_id`"
