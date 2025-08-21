@@ -21,6 +21,7 @@ type Raw interface {
 	WithContext(ctx context.Context) Raw
 	Args() []any
 	Query() string
+	PrintSQL() Raw
 }
 
 type rawQuery struct {
