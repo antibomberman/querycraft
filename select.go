@@ -20,8 +20,8 @@ type SelectBuilder interface {
 	WhereEq(column string, value any) SelectBuilder
 	WhereIn(column string, values ...any) SelectBuilder
 	WhereNotIn(column string, values ...any) SelectBuilder
-	WhereNull(column string) SelectBuilder
-	WhereNotNull(column string) SelectBuilder
+	WhereNull(column ...string) SelectBuilder
+	WhereNotNull(column ...string) SelectBuilder
 	WhereBetween(column string, from, to any) SelectBuilder
 	WhereNotBetween(column string, from, to any) SelectBuilder
 	WhereRaw(condition string, args ...any) SelectBuilder
@@ -33,7 +33,8 @@ type SelectBuilder interface {
 	OrWhere(column, operator string, value any) SelectBuilder
 	OrWhereEq(column string, value any) SelectBuilder
 	OrWhereIn(column string, values ...any) SelectBuilder
-	OrWhereNull(column string) SelectBuilder
+	OrWhereNull(column ...string) SelectBuilder
+	OrWhereNotNull(column ...string) SelectBuilder
 	OrWhereRaw(condition string, args ...any) SelectBuilder
 
 	// WHERE группировка
@@ -213,13 +214,17 @@ func (s *selectBuilder) WhereNotIn(column string, values ...any) SelectBuilder {
 	return s
 }
 
-func (s *selectBuilder) WhereNull(column string) SelectBuilder {
-	s.wheres = append(s.wheres, fmt.Sprintf("%s IS NULL", s.dialect.QuoteIdentifier(column)))
+func (s *selectBuilder) WhereNull(columns ...string) SelectBuilder {
+	for _, column := range columns {
+		s.wheres = append(s.wheres, fmt.Sprintf("%s IS NULL", s.dialect.QuoteIdentifier(column)))
+	}
 	return s
 }
 
-func (s *selectBuilder) WhereNotNull(column string) SelectBuilder {
-	s.wheres = append(s.wheres, fmt.Sprintf("%s IS NOT NULL", s.dialect.QuoteIdentifier(column)))
+func (s *selectBuilder) WhereNotNull(columns ...string) SelectBuilder {
+	for _, column := range columns {
+		s.wheres = append(s.wheres, fmt.Sprintf("%s IS NOT NULL", s.dialect.QuoteIdentifier(column)))
+	}
 	return s
 }
 
@@ -283,8 +288,17 @@ func (s *selectBuilder) OrWhereIn(column string, values ...any) SelectBuilder {
 	return s
 }
 
-func (s *selectBuilder) OrWhereNull(column string) SelectBuilder {
-	s.wheres = append(s.wheres, fmt.Sprintf("OR %s IS NULL", s.dialect.QuoteIdentifier(column)))
+func (s *selectBuilder) OrWhereNull(columns ...string) SelectBuilder {
+	for _, column := range columns {
+		s.wheres = append(s.wheres, fmt.Sprintf("OR %s IS NULL", s.dialect.QuoteIdentifier(column)))
+	}
+	return s
+}
+
+func (s *selectBuilder) OrWhereNotNull(columns ...string) SelectBuilder {
+	for _, column := range columns {
+		s.wheres = append(s.wheres, fmt.Sprintf("OR %s IS NOT NULL", s.dialect.QuoteIdentifier(column)))
+	}
 	return s
 }
 
