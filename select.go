@@ -7,6 +7,7 @@ import (
 	"regexp"
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	"github.com/antibomberman/querycraft/dialect"
 )
@@ -942,6 +943,7 @@ func (s *selectBuilder) Row() (map[string]any, error) {
 			s.logger.LogQuery(s.ctx, query, args, duration, nil)
 		}
 
+		row = s.convertByteArrayToString(row)
 		return row, nil
 	}
 
@@ -952,6 +954,27 @@ func (s *selectBuilder) Row() (map[string]any, error) {
 	}
 
 	return nil, sql.ErrNoRows
+}
+func (s *selectBuilder) convertByteArrayToString(data map[string]any) map[string]any {
+	if data == nil {
+		return nil
+	}
+	result := make(map[string]any)
+	for key, value := range data {
+		switch v := value.(type) {
+		case []byte:
+			if utf8.Valid(v) {
+				result[key] = string(v)
+			} else {
+				result[key] = v
+			}
+		case nil:
+			result[key] = nil
+		default:
+			result[key] = value
+		}
+	}
+	return result
 }
 
 func (s *selectBuilder) Rows() ([]map[string]any, error) {
@@ -995,7 +1018,7 @@ func (s *selectBuilder) Rows() ([]map[string]any, error) {
 			}
 			return nil, err
 		}
-		results = append(results, row)
+		results = append(results, s.convertByteArrayToString(row))
 	}
 
 	// Log query execution

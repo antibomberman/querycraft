@@ -2,6 +2,7 @@ package main
 
 import (
 	"database/sql"
+	"fmt"
 	"github.com/antibomberman/querycraft"
 	_ "github.com/go-sql-driver/mysql"
 	"log"
@@ -33,8 +34,35 @@ func Connect() {
 
 }
 func main() {
-
 	Connect()
-	ExampleSelect()
 	defer DB.Close()
+	QC.Schema().ClearTable("items")
+
+	// Create users table
+	QC.Schema().CreateTable("items", func(builder querycraft.TableBuilder) {
+		builder.ID()
+		builder.String("name", 100).Nullable()
+		builder.Text("desc")
+		builder.Integer("number").Default(0)
+
+		builder.Timestamp("created_at").NotNull()
+		builder.Timestamp("updated_at").NotNull()
+	})
+
+	_, err := QC.Insert("items").Columns("name", "desc", "number", "created_at", "updated_at").ValuesMap(map[string]any{
+		"name":       "test",
+		"desc":       "desc test",
+		"number":     12321,
+		"created_at": time.Now(),
+		"updated_at": time.Now(),
+	}).Exec()
+	if err != nil {
+		panic(err)
+	}
+	row, err := QC.Select().From("items").Row()
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println(row)
+
 }
