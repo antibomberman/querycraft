@@ -4,12 +4,10 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"github.com/antibomberman/querycraft/dialect"
 	"regexp"
 	"strings"
 	"time"
-	"unicode/utf8"
-
-	"github.com/antibomberman/querycraft/dialect"
 )
 
 // SelectBuilder - интерфейс для SELECT запросов
@@ -71,13 +69,12 @@ type SelectBuilder interface {
 	// Выполнение запросов
 	One(dest any) error
 	All(dest any) error
-
-	// Получение данных в разных форматах
 	Row() (map[string]any, error)
 	Rows() ([]map[string]any, error)
 	RowsMapKey(keyColumn string) (map[any]map[string]any, error)
 
 	// Получение отдельных значений
+	Scan(variable any) error
 	Field(column string) (any, error)
 	Pluck(column string) ([]any, error)
 
@@ -774,22 +771,6 @@ func (s *selectBuilder) setLogger(logger Logger) {
 	s.logger = logger
 }
 
-func formatArg(arg any) string {
-	switch v := arg.(type) {
-	case string:
-		return "'" + strings.Replace(v, "'", "''", -1) + "'"
-	case bool:
-		if v {
-			return "true"
-		}
-		return "false"
-	case nil:
-		return "NULL"
-	default:
-		return fmt.Sprintf("%v", v)
-	}
-}
-
 func (s *selectBuilder) Explain() ([]map[string]any, error) {
 	sql, args := s.buildSQL()
 	explainSQL := fmt.Sprintf("EXPLAIN %s", sql)
@@ -806,7 +787,7 @@ func (s *selectBuilder) Explain() ([]map[string]any, error) {
 		if err := rows.MapScan(row); err != nil {
 			return nil, err
 		}
-		results = append(results, s.convertByteArrayToString(row))
+		results = append(results, convertByteArrayToString(row))
 	}
 
 	return results, nil
@@ -943,7 +924,7 @@ func (s *selectBuilder) Row() (map[string]any, error) {
 			s.logger.LogQuery(s.ctx, query, args, duration, nil)
 		}
 
-		row = s.convertByteArrayToString(row)
+		row = convertByteArrayToString(row)
 		return row, nil
 	}
 
@@ -954,28 +935,6 @@ func (s *selectBuilder) Row() (map[string]any, error) {
 	}
 
 	return nil, sql.ErrNoRows
-}
-
-func (s *selectBuilder) convertByteArrayToString(data map[string]any) map[string]any {
-	if data == nil {
-		return nil
-	}
-	result := make(map[string]any)
-	for key, value := range data {
-		switch v := value.(type) {
-		case []byte:
-			if utf8.Valid(v) {
-				result[key] = string(v)
-			} else {
-				result[key] = v
-			}
-		case nil:
-			result[key] = nil
-		default:
-			result[key] = value
-		}
-	}
-	return result
 }
 
 func (s *selectBuilder) Rows() ([]map[string]any, error) {
@@ -1019,7 +978,7 @@ func (s *selectBuilder) Rows() ([]map[string]any, error) {
 			}
 			return nil, err
 		}
-		results = append(results, s.convertByteArrayToString(row))
+		results = append(results, convertByteArrayToString(row))
 	}
 
 	// Log query execution
@@ -1052,10 +1011,17 @@ func (s *selectBuilder) RowsMapKey(keyColumn string) (map[any]map[string]any, er
 			return nil, fmt.Errorf("key column %s not found in result", keyColumn)
 		}
 
-		results[key] = s.convertByteArrayToString(row)
+		results[key] = convertByteArrayToString(row)
 	}
 
 	return results, nil
+}
+
+func (s *selectBuilder) Scan(variable any) error {
+
+	query, args := s.ToSQL()
+
+	return s.db.GetContext(s.ctx, variable, query, args...)
 }
 
 func (s *selectBuilder) Field(column string) (any, error) {

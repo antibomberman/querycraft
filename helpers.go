@@ -3,8 +3,11 @@ package querycraft
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"github.com/jmoiron/sqlx"
+	"strings"
 	"time"
+	"unicode/utf8"
 )
 
 type SQLXExecutor interface {
@@ -32,4 +35,41 @@ type Logger interface {
 type Debuggable interface {
 	ToSQL() (string, []any)
 	Explain() ([]map[string]any, error)
+}
+
+func convertByteArrayToString(data map[string]any) map[string]any {
+	if data == nil {
+		return nil
+	}
+	result := make(map[string]any)
+	for key, value := range data {
+		switch v := value.(type) {
+		case []byte:
+			if utf8.Valid(v) {
+				result[key] = string(v)
+			} else {
+				result[key] = v
+			}
+		case nil:
+			result[key] = nil
+		default:
+			result[key] = value
+		}
+	}
+	return result
+}
+func formatArg(arg any) string {
+	switch v := arg.(type) {
+	case string:
+		return "'" + strings.Replace(v, "'", "''", -1) + "'"
+	case bool:
+		if v {
+			return "true"
+		}
+		return "false"
+	case nil:
+		return "NULL"
+	default:
+		return fmt.Sprintf("%v", v)
+	}
 }
