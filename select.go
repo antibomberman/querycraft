@@ -806,7 +806,7 @@ func (s *selectBuilder) Explain() ([]map[string]any, error) {
 		if err := rows.MapScan(row); err != nil {
 			return nil, err
 		}
-		results = append(results, row)
+		results = append(results, s.convertByteArrayToString(row))
 	}
 
 	return results, nil
@@ -955,6 +955,7 @@ func (s *selectBuilder) Row() (map[string]any, error) {
 
 	return nil, sql.ErrNoRows
 }
+
 func (s *selectBuilder) convertByteArrayToString(data map[string]any) map[string]any {
 	if data == nil {
 		return nil
