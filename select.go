@@ -75,7 +75,6 @@ type SelectBuilder interface {
 	RowsMapKey(keyColumn string) (map[any]map[string]any, error)
 
 	// Получение отдельных значений
-	Scan(variable any) error
 	Field(column string) (any, error)
 	Pluck(column string) ([]any, error)
 
@@ -1037,13 +1036,6 @@ func (s *selectBuilder) RowsMapKey(keyColumn string) (map[any]map[string]any, er
 	}
 
 	return results, nil
-}
-
-func (s *selectBuilder) Scan(variable any) error {
-
-	query, args := s.ToSQL()
-
-	return s.db.GetContext(s.ctx, variable, query, args...)
 }
 
 func (s *selectBuilder) Field(column string) (any, error) {

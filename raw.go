@@ -10,8 +10,9 @@ import (
 
 // RawQuery - интерфейс для сырых SQL запросов
 type Raw interface {
-	// Выполнение с разными результатами
+	//struct
 	One(dest any) error
+	//Array struct
 	All(dest any) error
 	Row() (map[string]any, error)
 	Rows() ([]map[string]any, error)
@@ -145,7 +146,7 @@ func (r *rawQuery) Row() (map[string]any, error) {
 			r.logger.LogQuery(r.ctx, r.query, r.args, duration, nil)
 		}
 
-		return row, nil
+		return convertByteArrayToString(row), nil
 	}
 
 	// Log query execution
@@ -196,7 +197,7 @@ func (r *rawQuery) Rows() ([]map[string]any, error) {
 			}
 			return nil, err
 		}
-		results = append(results, row)
+		results = append(results, convertByteArrayToString(row))
 	}
 
 	// Log query execution

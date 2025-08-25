@@ -64,7 +64,7 @@ func main() {
 
 	var number int
 
-	err := QC.Select("SUM(number)").From("items").Scan(&number)
+	err := QC.Select("SUM(number)").From("items").One(&number)
 	if err != nil {
 		panic(err)
 	}
