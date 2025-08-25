@@ -94,9 +94,9 @@ type SelectBuilder interface {
 	WithContext(ctx context.Context) SelectBuilder
 	Clone() SelectBuilder
 
+	ToSQL() (string, []any)
 	PrintSQL() SelectBuilder
 	Explain() ([]map[string]any, error)
-	buildSQL() (string, []any)
 }
 
 // PaginationResult represents the result of pagination
@@ -253,14 +253,14 @@ func (s *selectBuilder) WhereRaw(condition string, args ...any) SelectBuilder {
 func (s *selectBuilder) WhereExists(subquery SelectBuilder) SelectBuilder {
 	// For simplicity in this implementation, we'll just add a placeholder
 	// A full implementation would need to handle the subquery properly
-	sql, args := subquery.buildSQL()
+	sql, args := subquery.ToSQL()
 	s.wheres = append(s.wheres, fmt.Sprintf("EXISTS (%s)", sql))
 	s.whereArgs = append(s.whereArgs, args...)
 	return s
 }
 
 func (s *selectBuilder) WhereNotExists(subquery SelectBuilder) SelectBuilder {
-	sql, args := subquery.buildSQL()
+	sql, args := subquery.ToSQL()
 	s.wheres = append(s.wheres, fmt.Sprintf("NOT EXISTS (%s)", sql))
 	s.whereArgs = append(s.whereArgs, args...)
 	return s
@@ -760,6 +760,10 @@ func (s *selectBuilder) buildSQL() (string, []any) {
 }
 
 //Exec Methods
+
+func (s *selectBuilder) ToSQL() (string, []any) {
+	return s.buildSQL()
+}
 
 func (s *selectBuilder) PrintSQL() SelectBuilder {
 	s.printSQL = true
