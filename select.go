@@ -1051,7 +1051,7 @@ func (s *selectBuilder) RowsMapKey(keyColumn string) (map[any]map[string]any, er
 			return nil, fmt.Errorf("key column %s not found in result", keyColumn)
 		}
 
-		results[key] = row
+		results[key] = s.convertByteArrayToString(row)
 	}
 
 	return results, nil
