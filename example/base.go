@@ -62,12 +62,12 @@ func main() {
 		}
 	*/
 
-	var number int
+	var numbers []int
 
-	err := QC.Select("SUM(number)").From("items").One(&number)
+	err := QC.Select("SUM(number)").From("items").All(&numbers)
 	if err != nil {
 		panic(err)
 	}
-	fmt.Println(number)
+	fmt.Println(numbers)
 
 }
