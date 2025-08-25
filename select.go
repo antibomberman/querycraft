@@ -54,8 +54,8 @@ type SelectBuilder interface {
 	OuterJoin(table, condition string) SelectBuilder
 
 	// Сортировка и группировка
-	OrderBy(column string) SelectBuilder
-	OrderByDesc(column string) SelectBuilder
+	OrderBy(columns ...string) SelectBuilder
+	OrderByDesc(columns ...string) SelectBuilder
 	OrderByRaw(expression string) SelectBuilder
 	GroupBy(columns ...string) SelectBuilder
 	Having(condition string, args ...any) SelectBuilder
@@ -97,7 +97,6 @@ type SelectBuilder interface {
 	Explain() ([]map[string]any, error)
 }
 
-// PaginationResult represents the result of pagination
 type PaginationResult struct {
 	Data        []map[string]any `json:"data"`
 	Total       int64            `json:"total"`
@@ -107,8 +106,6 @@ type PaginationResult struct {
 	From        int              `json:"from"`
 	To          int              `json:"to"`
 }
-
-// KeysetPaginationResult represents the result of keyset pagination
 type KeysetPaginationResult struct {
 	Data       []map[string]any `json:"data"`
 	HasMore    bool             `json:"has_more"`
@@ -470,13 +467,24 @@ func (s *selectBuilder) OuterJoin(table, condition string) SelectBuilder {
 	return s
 }
 
-func (s *selectBuilder) OrderBy(column string) SelectBuilder {
-	s.orders = append(s.orders, s.dialect.SelectOrderBy(column, false))
+func (s *selectBuilder) OrderBy(columns ...string) SelectBuilder {
+	for _, column := range columns {
+		if column == "" {
+			continue
+		}
+		s.orders = append(s.orders, s.dialect.SelectOrderBy(column, false))
+	}
 	return s
 }
 
-func (s *selectBuilder) OrderByDesc(column string) SelectBuilder {
-	s.orders = append(s.orders, s.dialect.SelectOrderBy(column, true))
+func (s *selectBuilder) OrderByDesc(columns ...string) SelectBuilder {
+	for _, column := range columns {
+		if column == "" {
+			continue
+		}
+		s.orders = append(s.orders, s.dialect.SelectOrderBy(column, true))
+	}
+
 	return s
 }
 
