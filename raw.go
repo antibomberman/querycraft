@@ -17,6 +17,7 @@ type Raw interface {
 	Row() (map[string]any, error)
 	Rows() ([]map[string]any, error)
 	Exec() (sql.Result, error)
+	ExecReturnID() (int64, error)
 
 	// Утилиты
 	WithContext(ctx context.Context) Raw
@@ -257,4 +258,13 @@ func (r *rawQuery) PrintSQL() Raw {
 
 func (r *rawQuery) setLogger(logger Logger) {
 	r.logger = logger
+}
+
+func (r *rawQuery) ExecReturnID() (int64, error) {
+	result, err := r.Exec()
+	if err != nil {
+		return 0, err
+	}
+
+	return result.LastInsertId()
 }
