@@ -57,6 +57,11 @@ type TableBuilder interface {
 	DateTime(name string) ColumnBuilder                      // DATETIME
 	Timestamp(name string) ColumnBuilder                     // TIMESTAMP
 	JSON(name string) ColumnBuilder                          // JSON
+	Enum(name string, values ...string) ColumnBuilder        // ENUM
+	Set(name string, values ...string) ColumnBuilder         // SET
+	Unsigned() ColumnBuilder                                 // UNSIGNED (для числовых)
+	OnDelete(action string) TableBuilder                     // ON DELETE для последнего внешнего ключа
+	OnUpdate(action string) TableBuilder                     // ON UPDATE для последнего внешнего ключа
 
 	// Специальные колонки
 	Timestamps() TableBuilder  // created_at, updated_at
@@ -73,6 +78,8 @@ type TableBuilder interface {
 	DropColumn(name string) TableBuilder
 	DropIndex(name string) TableBuilder
 	DropForeign(name string) TableBuilder
+	RenameColumn(from, to string) TableBuilder
+	RenameIndex(from, to string) TableBuilder
 }
 
 type ColumnBuilder interface {
@@ -683,6 +690,72 @@ func (t *tableBuilder) DropForeign(name string) TableBuilder {
 	return t
 }
 
+func (t *tableBuilder) Enum(name string, values ...string) ColumnBuilder {
+	vals := make([]string, len(values))
+	for i, v := range values {
+		vals[i] = fmt.Sprintf("'%s'", strings.ReplaceAll(v, "'", "''"))
+	}
+	t.columns = append(t.columns, columnDefinition{
+		name:     name,
+		dataType: fmt.Sprintf("ENUM(%s)", strings.Join(vals, ", ")),
+	})
+	return t
+}
+
+func (t *tableBuilder) Set(name string, values ...string) ColumnBuilder {
+	vals := make([]string, len(values))
+	for i, v := range values {
+		vals[i] = fmt.Sprintf("'%s'", strings.ReplaceAll(v, "'", "''"))
+	}
+	t.columns = append(t.columns, columnDefinition{
+		name:     name,
+		dataType: fmt.Sprintf("SET(%s)", strings.Join(vals, ", ")),
+	})
+	return t
+}
+
+func (t *tableBuilder) Unsigned() ColumnBuilder {
+	if len(t.columns) > 0 {
+		t.columns[len(t.columns)-1].modifiers = append(t.columns[len(t.columns)-1].modifiers, "UNSIGNED")
+	}
+	return t
+}
+
+// Для внешних ключей: ON DELETE/ON UPDATE
+func (t *tableBuilder) OnDelete(action string) TableBuilder {
+	for i := len(t.indexes) - 1; i >= 0; i-- {
+		if t.indexes[i].foreign != nil {
+			t.indexes[i].foreign.onDelete = action
+			break
+		}
+	}
+	return t
+}
+
+func (t *tableBuilder) OnUpdate(action string) TableBuilder {
+	for i := len(t.indexes) - 1; i >= 0; i-- {
+		if t.indexes[i].foreign != nil {
+			t.indexes[i].foreign.onUpdate = action
+			break
+		}
+	}
+	return t
+}
+
+func (t *tableBuilder) RenameColumn(from, to string) TableBuilder {
+	if t.alter {
+		t.commands = append(t.commands, fmt.Sprintf("RENAME COLUMN %s TO %s", t.dialect.QuoteIdentifier(from), t.dialect.QuoteIdentifier(to)))
+	}
+	return t
+}
+
+func (t *tableBuilder) RenameIndex(from, to string) TableBuilder {
+	if t.alter {
+		t.commands = append(t.commands, fmt.Sprintf("RENAME INDEX %s TO %s", t.dialect.QuoteIdentifier(from), t.dialect.QuoteIdentifier(to)))
+	}
+	return t
+}
+
 // Generate SQL
 func (t *tableBuilder) toSQL() (string, []any) {
 	if t.alter {
@@ -718,10 +791,17 @@ func (t *tableBuilder) toCreateSQL() (string, []any) {
 	// Add foreign key constraints
 	for _, idx := range t.indexes {
 		if idx.foreign != nil {
-			columnDefs = append(columnDefs, fmt.Sprintf("FOREIGN KEY (%s) REFERENCES %s(%s)",
+			fk := fmt.Sprintf("FOREIGN KEY (%s) REFERENCES %s(%s)",
 				t.dialect.QuoteIdentifier(idx.foreign.column),
 				t.dialect.QuoteIdentifier(idx.foreign.refTable),
-				t.dialect.QuoteIdentifier(idx.foreign.refColumn)))
+				t.dialect.QuoteIdentifier(idx.foreign.refColumn))
+			if idx.foreign.onDelete != "" {
+				fk += " ON DELETE " + idx.foreign.onDelete
+			}
+			if idx.foreign.onUpdate != "" {
+				fk += " ON UPDATE " + idx.foreign.onUpdate
+			}
+			columnDefs = append(columnDefs, fk)
 		}
 	}
 
@@ -764,10 +844,17 @@ func (t *tableBuilder) toAlterSQL() (string, []any) {
 	// Add foreign key constraints
 	for _, idx := range t.indexes {
 		if idx.foreign != nil {
-			alterParts = append(alterParts, fmt.Sprintf("ADD FOREIGN KEY (%s) REFERENCES %s(%s)",
+			fk := fmt.Sprintf("ADD FOREIGN KEY (%s) REFERENCES %s(%s)",
 				t.dialect.QuoteIdentifier(idx.foreign.column),
 				t.dialect.QuoteIdentifier(idx.foreign.refTable),
-				t.dialect.QuoteIdentifier(idx.foreign.refColumn)))
+				t.dialect.QuoteIdentifier(idx.foreign.refColumn))
+			if idx.foreign.onDelete != "" {
+				fk += " ON DELETE " + idx.foreign.onDelete
+			}
+			if idx.foreign.onUpdate != "" {
+				fk += " ON UPDATE " + idx.foreign.onUpdate
+			}
+			alterParts = append(alterParts, fk)
 		}
 	}
 
@@ -790,4 +877,46 @@ func quoteIdentifiers(dialect dialect.Dialect, identifiers []string) []string {
 
 func (s *schemaBuilder) setLogger(logger Logger) {
 	s.logger = logger
+}
+
+func (s *schemaBuilder) DropColumn(table, column string) error {
+	query := fmt.Sprintf("ALTER TABLE %s DROP COLUMN %s", s.dialect.QuoteIdentifier(table), s.dialect.QuoteIdentifier(column))
+	var start time.Time
+	if s.logger != nil {
+		start = time.Now()
+	}
+	_, err := s.db.ExecContext(s.ctx, query)
+	if s.logger != nil {
+		duration := time.Since(start)
+		s.logger.LogQuery(s.ctx, query, nil, duration, err)
+	}
+	return err
+}
+
+func (s *schemaBuilder) DropIndex(table, index string) error {
+	query := fmt.Sprintf("ALTER TABLE %s DROP INDEX %s", s.dialect.QuoteIdentifier(table), s.dialect.QuoteIdentifier(index))
+	var start time.Time
+	if s.logger != nil {
+		start = time.Now()
+	}
+	_, err := s.db.ExecContext(s.ctx, query)
+	if s.logger != nil {
+		duration := time.Since(start)
+		s.logger.LogQuery(s.ctx, query, nil, duration, err)
+	}
+	return err
+}
+
+func (s *schemaBuilder) DropForeign(table, foreign string) error {
+	query := fmt.Sprintf("ALTER TABLE %s DROP FOREIGN KEY %s", s.dialect.QuoteIdentifier(table), s.dialect.QuoteIdentifier(foreign))
+	var start time.Time
+	if s.logger != nil {
+		start = time.Now()
+	}
+	_, err := s.db.ExecContext(s.ctx, query)
+	if s.logger != nil {
+		duration := time.Since(start)
+		s.logger.LogQuery(s.ctx, query, nil, duration, err)
+	}
+	return err
 }
