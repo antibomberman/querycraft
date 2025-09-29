@@ -51,7 +51,7 @@ type upsertBuilder struct {
 
 	table           string
 	columns         []string
-	values          []any
+	values          [][]any
 	conflictColumns []string
 	updateColumns   []string
 	updateExcluded  []string
@@ -73,65 +73,114 @@ func NewUpsertBuilder(db SQLXExecutor, dialect dialect.Dialect, table string) Up
 }
 
 func (u *upsertBuilder) Values(data any) UpsertBuilder {
-	// Check for nil data
 	if data == nil {
 		return u
 	}
 
-	// Use reflection to extract fields and their values
 	v := reflect.ValueOf(data)
-	t := reflect.TypeOf(data)
-
-	// Handle pointers
 	if v.Kind() == reflect.Ptr {
-		// Check for nil pointer
 		if v.IsNil() {
 			return u
 		}
 		v = v.Elem()
-		t = t.Elem()
 	}
 
-	// Handle structs
-	if v.Kind() == reflect.Struct {
-		for i := 0; i < v.NumField(); i++ {
-			field := t.Field(i)
-			value := v.Field(i)
-
-			// Skip unexported fields
-			if !field.IsExported() {
-				continue
+	switch v.Kind() {
+	case reflect.Struct:
+		u.addStruct(v)
+	case reflect.Map:
+		u.addMap(v)
+	case reflect.Slice:
+		for i := 0; i < v.Len(); i++ {
+			elem := v.Index(i)
+			if elem.Kind() == reflect.Ptr {
+				if elem.IsNil() {
+					continue
+				}
+				elem = elem.Elem()
 			}
 
-			// Get column name from struct tag or field name
-			column := field.Name
-			if tag := field.Tag.Get("db"); tag != "" {
-				column = tag
+			switch elem.Kind() {
+			case reflect.Struct:
+				u.addStruct(elem)
+			case reflect.Map:
+				u.addMap(elem)
+			default:
+				// Potentially handle other types or panic
 			}
-
-			// Skip fields with "-" tag
-			if column == "-" {
-				continue
-			}
-
-			// Add column and value
-			u.columns = append(u.columns, column)
-			u.values = append(u.values, value.Interface())
 		}
-	}
-
-	// Handle maps
-	if v.Kind() == reflect.Map {
-		for _, key := range v.MapKeys() {
-			column := key.String()
-			value := v.MapIndex(key).Interface()
-
-			u.columns = append(u.columns, column)
-			u.values = append(u.values, value)
-		}
+	default:
+		// Potentially handle other types or panic
 	}
 
 	return u
+}
+
+func (u *upsertBuilder) addStruct(v reflect.Value) {
+	t := v.Type()
+	var rowValues []any
+
+	if len(u.columns) == 0 {
+		var columns []string
+		for i := 0; i < v.NumField(); i++ {
+			field := t.Field(i)
+			if !field.IsExported() {
+				continue
+			}
+			column := field.Name
+			if tag := field.Tag.Get("db"); tag != "" {
+				if tag == "-" {
+					continue
+				}
+				column = tag
+			}
+			columns = append(columns, column)
+			rowValues = append(rowValues, v.Field(i).Interface())
+		}
+		u.columns = columns
+	} else {
+		for _, column := range u.columns {
+			var fieldValue reflect.Value
+			for i := 0; i < t.NumField(); i++ {
+				field := t.Field(i)
+				tag := field.Tag.Get("db")
+				if tag == column {
+					fieldValue = v.Field(i)
+					break
+				}
+			}
+
+			if fieldValue.IsValid() {
+				rowValues = append(rowValues, fieldValue.Interface())
+			} else {
+				rowValues = append(rowValues, nil)
+			}
+		}
+	}
+	u.values = append(u.values, rowValues)
+}
+
+func (u *upsertBuilder) addMap(v reflect.Value) {
+	var rowValues []any
+
+	if len(u.columns) == 0 {
+		var columns []string
+		for _, key := range v.MapKeys() {
+			columns = append(columns, key.String())
+			rowValues = append(rowValues, v.MapIndex(key).Interface())
+		}
+		u.columns = columns
+	} else {
+		for _, column := range u.columns {
+			value := v.MapIndex(reflect.ValueOf(column))
+			if value.IsValid() {
+				rowValues = append(rowValues, value.Interface())
+			} else {
+				rowValues = append(rowValues, nil)
+			}
+		}
+	}
+	u.values = append(u.values, rowValues)
 }
 
 func (u *upsertBuilder) Columns(columns ...string) UpsertBuilder {
@@ -183,12 +232,16 @@ func (u *upsertBuilder) buildSQL() (string, []any) {
 	}
 
 	if len(u.values) > 0 {
-		placeholders := make([]string, len(u.values))
-		for j := range u.values {
-			placeholders[j] = u.dialect.PlaceholderFormat()
+		var valueParts []string
+		for _, row := range u.values {
+			placeholders := make([]string, len(row))
+			for j := range row {
+				placeholders[j] = u.dialect.PlaceholderFormat()
+			}
+			valueParts = append(valueParts, fmt.Sprintf("(%s)", strings.Join(placeholders, ", ")))
+			args = append(args, row...)
 		}
-		queryParts = append(queryParts, "VALUES", fmt.Sprintf("(%s)", strings.Join(placeholders, ", ")))
-		args = append(args, u.values...)
+		queryParts = append(queryParts, "VALUES", strings.Join(valueParts, ", "))
 	}
 
 	// ON DUPLICATE KEY UPDATE part

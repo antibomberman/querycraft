@@ -117,3 +117,38 @@ func TestUpsertWithMap(t *testing.T) {
 	assert.Contains(t, args, "John")
 	assert.Contains(t, args, "john@example.com")
 }
+
+func TestUpsertWithSliceOfMaps(t *testing.T) {
+	mockDB := &test_utils.MockSQLXExecutor{}
+	builder := querycraft.NewUpsertBuilder(mockDB, &dialect.MySQLDialect{}, "users")
+
+	data := []map[string]any{
+		{
+			"id":    1,
+			"name":  "John",
+			"email": "john@example.com",
+		},
+		{
+			"id":    2,
+			"name":  "Jane",
+			"email": "jane@example.com",
+		},
+	}
+
+	result := builder.Values(data)
+	sql, args := result.ToSQL()
+
+	assert.Contains(t, sql, "INSERT INTO users")
+	assert.Contains(t, sql, "`id`")
+	assert.Contains(t, sql, "`name`")
+	assert.Contains(t, sql, "`email`")
+	assert.Contains(t, sql, "VALUES")
+	assert.Contains(t, sql, "(?, ?, ?), (?, ?, ?)")
+	assert.Len(t, args, 6)
+	assert.Contains(t, args, 1)
+	assert.Contains(t, args, "John")
+	assert.Contains(t, args, "john@example.com")
+	assert.Contains(t, args, 2)
+	assert.Contains(t, args, "Jane")
+	assert.Contains(t, args, "jane@example.com")
+}
