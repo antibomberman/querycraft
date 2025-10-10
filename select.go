@@ -72,6 +72,7 @@ type SelectBuilder interface {
 	One(dest any) error
 	Find(dest any) (bool, error)
 	All(dest any) error
+	Get(dest any) (bool, error)
 	Row() (map[string]any, error)
 	Rows() ([]map[string]any, error)
 	RowsMapKey(keyColumn string) (map[any]map[string]any, error)
@@ -910,6 +911,20 @@ func (s *selectBuilder) All(dest any) error {
 
 		return err
 	}
+}
+
+func (s *selectBuilder) Get(dest any) (bool, error) {
+
+	err := s.All(dest)
+
+	if err == nil {
+		return true, nil
+	}
+	if errors.Is(err, sql.ErrNoRows) {
+		return false, nil
+	}
+	return false, err
+
 }
 
 func (s *selectBuilder) Row() (map[string]any, error) {
