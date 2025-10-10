@@ -16,6 +16,7 @@ import (
 type UpdateBuilder interface {
 	// Установка значений
 	Set(column string, value any) UpdateBuilder
+	//Не нужно
 	SetRaw(expression string, args ...any) UpdateBuilder
 	SetMap(values map[string]any) UpdateBuilder
 	SetStruct(data any) UpdateBuilder

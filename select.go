@@ -3,6 +3,7 @@ package querycraft
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"github.com/antibomberman/querycraft/dialect"
 	"regexp"
@@ -69,6 +70,7 @@ type SelectBuilder interface {
 
 	// Выполнение запросов
 	One(dest any) error
+	Find(dest any) (bool, error)
 	All(dest any) error
 	Row() (map[string]any, error)
 	Rows() ([]map[string]any, error)
@@ -854,6 +856,18 @@ func (s *selectBuilder) One(dest any) error {
 
 		return err
 	}
+}
+
+func (s *selectBuilder) Find(dest any) (bool, error) {
+
+	err := s.One(dest)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return false, nil
+		}
+		return false, err
+	}
+	return true, nil
 }
 
 func (s *selectBuilder) All(dest any) error {
